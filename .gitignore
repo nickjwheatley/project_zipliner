@@ -5,3 +5,5 @@ data/raw*
 *.ipynb_checkpoints*
 *.idea*
 *SECRETS.ini*
+*pycache*
+*cache*
