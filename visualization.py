@@ -3,7 +3,71 @@ import plotly.express as px
 import json
 from urllib.request import urlopen
 import plotly.graph_objects as go
+from all_labels import get_metric_labels
+import math
+import numpy as np
 
+
+def lat_lon_to_cartesian(lat, lon):
+    """
+    Converts latitude and longitude to Cartesian coordinates.
+
+    Args:
+        lat (float): Latitude in degrees.
+        lon (float): Longitude in degrees.
+
+    Returns:
+        tuple: A tuple containing the Cartesian coordinates (x, y, z).
+    """
+    lat, lon = math.radians(lat), math.radians(lon)
+    x = math.cos(lat) * math.cos(lon)
+    y = math.cos(lat) * math.sin(lon)
+    z = math.sin(lat)
+    return x, y, z
+
+
+def cartesian_to_lat_lon(x, y, z):
+    """
+    Converts Cartesian coordinates to latitude and longitude.
+
+    Args:
+        x (float): X coordinate.
+        y (float): Y coordinate.
+        z (float): Z coordinate.
+
+    Returns:
+        tuple: A tuple containing the latitude and longitude in degrees.
+    """
+    lon = math.atan2(y, x)
+    hyp = math.sqrt(x * x + y * y)
+    lat = math.atan2(z, hyp)
+    return math.degrees(lat), math.degrees(lon)
+
+
+def find_centroid(coords):
+    """
+    Finds the geographical center (centroid) of a set of latitude and longitude coordinates.
+
+    Args:
+        coords (list): A list of tuples, where each tuple contains the latitude and longitude.
+
+    Returns:
+        tuple: A tuple containing the latitude and longitude of the centroid.
+    """
+    x_sum = y_sum = z_sum = 0
+    num_coords = len(coords)
+
+    for lat, lon in coords:
+        x, y, z = lat_lon_to_cartesian(lat, lon)
+        x_sum += x
+        y_sum += y
+        z_sum += z
+
+    x_avg = x_sum / num_coords
+    y_avg = y_sum / num_coords
+    z_avg = z_sum / num_coords
+
+    return cartesian_to_lat_lon(x_avg, y_avg, z_avg)
 def get_state_name_from_abbreviation(state_abrv):
     """
     Get the full state name from a state abbreviation. Used to get the geo_codes for zip code boundaries
@@ -95,7 +159,7 @@ def get_geo_json_codes(state_abbr, desired_zip_codes):
     return desired_zip_code_boundaries
 
 
-def render_choropleth_map(df, metro_area, desired_metric):
+def render_choropleth_map(df, metro_area, desired_metric, num_bedrooms):
     """
     Renders a choropleth map of housing data of all the zip codes in a desired metropolitan area
     :param df: pandas dataframe containing appeal index data and other valuable housing metrics
@@ -106,7 +170,7 @@ def render_choropleth_map(df, metro_area, desired_metric):
     desired_state_abbr = df.loc[df.metro == metro_area,'state'].iloc[0]
     zip_code_boundaries = get_geo_json_codes(desired_state_abbr, desired_zip_codes)
 
-    fig = px.choropleth(df.loc[df.metro == metro_area],
+    fig = px.choropleth(df.loc[(df.metro == metro_area) & (df.bedrooms == num_bedrooms)],
                         geojson=zip_code_boundaries,
                         locations='zip_code',
                         color=desired_metric,
@@ -115,18 +179,110 @@ def render_choropleth_map(df, metro_area, desired_metric):
                         scope="usa",
                         fitbounds='locations',
                         labels={
+                            'zip_code': 'Zip Code',
                             'city': 'City',
-                            # 'ZHVI': 'ZHVI',
-                            # 'ZHVI_diff': 'Change in Price',
-                            # 'mean_monthly_change': 'Mean Monthly Change',
-                            desired_metric: desired_metric,
-                            'Affordability_Ratio': 'Affordability Ratio'
+                            desired_metric: get_metric_labels()[desired_metric]
                         },
-                        hover_data=['city', 'zip_code', desired_metric, 'Affordability_Ratio'],
+                        hover_data=['city', 'zip_code', desired_metric],
+                        title = f'{metro_area} - {num_bedrooms} bedrooms'
                         # width = 1500,
-                        height = 700
+                        # height = 500
                         )
-    # fig.update_layout(margin={"r": 20, "t": 0, "l": 20, "b": 0}) #removing because it re-renders the viz taking longer
+
+    fig.update_layout(
+        margin=dict(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=45  # top margin
+        ),
+        legend=dict(
+            x=0,  # Set the x position of the legend (0 is the far left, 1 is the far right)
+            xanchor='left',  # Set the x anchor
+            y=1  # Set the y position of the legend (1 is the top, 0 is the bottom)
+        )
+    )
+
+    return fig
+
+
+def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
+    """
+    Renders a choropleth map of housing data of all the zip codes in a desired metropolitan area
+    :param df: pandas dataframe containing appeal index data and other valuable housing metrics
+    :param metro_area: string indicating desired metropolitan area to render
+    :return: plotly.express choropleth figure
+    """
+    desired_zip_codes = df.loc[df.metro == metro_area, 'zip_code'].unique().tolist()
+    desired_state_abbr = df.loc[df.metro == metro_area,'state'].iloc[0]
+    zip_code_boundaries = get_geo_json_codes(desired_state_abbr, desired_zip_codes)
+
+    coords = zip_code_boundaries['features'][0]['geometry']['coordinates'][0]
+    center = np.array(coords).mean(axis=0).tolist()
+    fig = px.choropleth_mapbox(df.loc[(df.metro == metro_area) & (df.bedrooms == num_bedrooms)],
+                        geojson=zip_code_boundaries,
+                        locations='zip_code',
+                        color=desired_metric,
+                        color_continuous_scale="bluyl",
+                        featureidkey="properties.ZCTA5CE10",
+                        # fitbounds='locations',
+                        mapbox_style='carto-positron',
+                        labels={
+                            'zip_code': 'Zip Code',
+                            'city': 'City',
+                            desired_metric: get_metric_labels()[desired_metric]
+                        },
+                        hover_data=['city', 'zip_code', desired_metric],
+                        title = f'{metro_area} - {num_bedrooms} bedrooms',
+                        opacity=0.25,
+                        center = {'lat': center[1], 'lon': center[0]},
+                        zoom = 8
+                        # width = 1500,
+                        # height = 500
+                        )
+
+    fig.update_layout(
+        margin=dict(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=45  # top margin
+        ),
+        legend=dict(
+            x=0,  # Set the x position of the legend (0 is the far left, 1 is the far right)
+            xanchor='left',  # Set the x anchor
+            y=1  # Set the y position of the legend (1 is the top, 0 is the bottom)
+        )
+    )
+
+    return fig
+
+
+def render_time_series_plot(df, zip_code, bedrooms):
+    viz_df = df.loc[(df.zip_code == int(zip_code)) & (df.bedrooms == int(bedrooms))].sort_values('date')
+
+    fig = px.line(
+        viz_df,
+        x='date',
+        y='zhvi',
+        color='zip_code',
+        # color_discrete_sequence=['bluyl'],
+        labels = {
+            'zip_code':'Zip Code',
+            'zhvi':'Zillow Home Value Index',
+            'date':'Date'
+        },
+        title = f'Zillow Home Values for {zip_code}'
+    )
+
+    fig.update_layout(
+        margin=dict(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=45  # top margin
+        )
+    )
 
     return fig
 

@@ -17,9 +17,15 @@ def extract_highest_number(text):
     # Return the highest number
     return max(numbers) if numbers else None
 
+# df_zillow_ts = pd.read_parquet('../data/processed/zillow_all_data.parquet')
+
 df_merged = pd.read_parquet('../data/processed/merged_dataset_before_zillow.parquet')
 df_zillow = pd.read_csv('../data/processed/zillow_current_snapshot.csv')
 df_gs = pd.read_csv('../data/processed/great_schools_mean_ratings.csv')
+
+# df_tmp = df_gs.loc[df_gs.zip_code == 95121]
+# df_tmp['rating_distance'] = df_tmp.apply(lambda x: f'GS: {x.rating:.1f}/10  Avg Dist: {x.distance:.1f} Miles', axis=1)
+# df_tmp1 = df_tmp[['type','level_family','rating_distance']].pivot(columns=['type'], index='level_family', values='rating_distance').fillna('No Data')
 
 df_zillow.zip_code = df_zillow.zip_code.apply(lambda x: f'{x:05}')
 df_gs.zip_code = df_gs.zip_code.apply(lambda x: f'{x:05}')
