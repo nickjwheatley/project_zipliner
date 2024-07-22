@@ -41,7 +41,17 @@ def setup_aws_connection(purpose='read'):
     if os.path.exists('SECRETS.ini'):
         aws_credentials = config()
     else:
-        raise Exception(f'No filed "SECRETS.ini" found in directory containing AWS RDS credentials')
+        try:
+            aws_credentials = {
+                'database':os.getenv('DB_NAME'),
+                'user':os.getenv('DB_USER'),
+                'password':os.getenv('DB_PASSWORD'),
+                'host':os.getenv('DB_HOST'),
+                'port':os.getenv('DB_PORT')
+            }
+        except Exception as e:
+            print(e)
+            raise Exception(f'No file "SECRETS.ini" found in directory containing AWS RDS credentials or Heroku environment variables failing')
 
     db = aws_credentials['database']
     user = aws_credentials['user']
