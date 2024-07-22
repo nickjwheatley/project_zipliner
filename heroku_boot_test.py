@@ -2,6 +2,14 @@ from dash import html, Dash, dash_table
 import pandas as pd
 import dash_bootstrap_components as dbc
 from data_extract import query_rds, get_rds_schema
+import os
+
+ON_HEROKU = os.getenv('ON_HEROKU')
+if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
+    host = '0.0.0.0'
+else:
+    host = '127.0.0.1'
+
 
 df_query = "SELECT metro,zip_code FROM prelim_merged_pivoted_snapshot LIMIT 10;"
 
@@ -32,4 +40,4 @@ app.layout = html.Div([
 ])
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=int(os.environ.get('PORT', 8050)), host=host)
