@@ -1,1 +1,1 @@
-web: python heroku_boot_test.py
+web: python app_v3.py

@@ -9,6 +9,12 @@ from all_labels import get_metric_labels
 import plotly.express as px
 from data_extract import query_rds, get_rds_schema
 
+ON_HEROKU = os.getenv('ON_HEROKU')
+if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
+    host = '0.0.0.0'
+else:
+    host = '127.0.0.1'
+
 if 'REDIS_URL' in os.environ:
     # Use Redis & Celery if REDIS_URL set as an env variable
     from celery import Celery
@@ -290,4 +296,4 @@ def update_cards(hoverData, bedrooms):
     ]
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=int(os.environ.get('PORT', 8050)), host=host)
