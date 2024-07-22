@@ -151,14 +151,14 @@ def update_choropleth_graph(selected_metro_area, selected_num_bedrooms, selected
 @callback(
     Output('time-series-graph', 'figure'),
     [
-        Input('choropleth-graph', 'hoverData'),
+        Input('choropleth-graph', 'clickData'),
         Input('bedrooms-dropdown',  'value')
     ]
 )
-def update_time_series_graph(hoverData, bedrooms):
-    if hoverData is None:
-        return px.line(title='Hover over map regions to see trended home values')
-    zc = hoverData['points'][0]['location']
+def update_time_series_graph(clickData, bedrooms):
+    if clickData is None:
+        return px.line(title='Click on map regions to see trended home values')
+    zc = clickData['points'][0]['location']
     df_zillow_ts = query_rds(f"SELECT * FROM prelim_zillow_time_series WHERE zip_code = {int(zc)}")
     fig = render_time_series_plot(df_zillow_ts, zc, bedrooms)
     return fig
@@ -168,11 +168,11 @@ def update_time_series_graph(hoverData, bedrooms):
 @callback(
     Output('card-container', 'children'),
     [
-        Input('choropleth-graph','hoverData'),
+        Input('choropleth-graph','clickData'),
         Input('bedrooms-dropdown','value')
     ]
 )
-def update_cards(hoverData, bedrooms):
+def update_cards(clickData, bedrooms):
     label_style = {
         'font-weight': 'bold',
         'text-align': 'center',
@@ -189,7 +189,7 @@ def update_cards(hoverData, bedrooms):
         'borderRadius': '5px',
         'backgroundColor': 'white'
     }
-    if hoverData is None:
+    if clickData is None:
         return [
             dbc.Row([
                 dbc.Col([
@@ -218,7 +218,7 @@ def update_cards(hoverData, bedrooms):
                 ], width=3, style=card_style)
             ])
         ]
-    zc = hoverData['points'][0]['location']
+    zc = clickData['points'][0]['location']
     tmp_df = df.loc[(df.zip_code == zc) & (df.bedrooms == bedrooms)].copy()
     tmp_gs = df_gs.loc[df_gs.zip_code == zc].copy()
     tmp_gs['rating_distance'] = tmp_gs.apply(lambda x: f'GS: {x.rating:.1f}/10  Avg Dist: {x.distance:.1f} Miles',
