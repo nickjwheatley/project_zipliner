@@ -44,6 +44,13 @@ df_gs = query_rds(df_gs_query, config_filepath='SECRETS.ini')
 
 metric_labels = get_metric_labels()
 
+# Ensure proper data types
+df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
+df['median_age'] = df['median_age'].replace('-',np.nan)
+for label in metric_labels:
+    if df[label].dtypes == 'O':
+        df[label] = df[label].astype(float)
+
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
 app.layout = html.Div([
         html.H1("Project Zipliner"),
@@ -197,25 +204,25 @@ def update_cards(clickData, bedrooms):
                     html.Label(
                         'Economic',
                         style=label_style),
-                    html.P('Hover over zip code to see details...', id='economic-metrics')
+                    html.P('Click zip code to see details...', id='economic-metrics')
                 ], width=3, style=card_style),
                 dbc.Col([
                     html.Label(
                         'Cost of Living',
                         style=label_style),
-                    html.P('Hover over zip code to see details...', id='col-metrics')
+                    html.P('Click zip code to see details...', id='col-metrics')
+                ], width=3, style=card_style),
+                dbc.Col([
+                    html.Label(
+                        'Quality of Life',
+                        style=label_style),
+                    html.P('Click zip code to see details...', id='qol-metrics')
                 ], width=3, style=card_style),
                 dbc.Col([
                     html.Label(
                         'Demographic',
                         style=label_style),
-                    html.P('Hover over zip code to see details...', id='demographic-metrics')
-                ], width=3, style=card_style),
-                dbc.Col([
-                    html.Label(
-                        'Education',
-                        style=label_style),
-                    html.P('Hover over zip code to see details...', id='education-metrics')
+                    html.P('Click zip code to see details...', id='demographic-metrics')
                 ], width=3, style=card_style)
             ])
         ]
@@ -247,12 +254,12 @@ def update_cards(clickData, bedrooms):
                     html.Br(),
                     html.Span([
                         html.B([
-                            metric_labels['est_number_of_jobs'],
+                            'Estimated Number of Jobs per Person',
                             html.Sup('c'),
                             ': '
                         ]),
                         'No Data' if np.isnan(tmp_df["est_number_of_jobs"].iloc[0]) \
-                            else f'{tmp_df["est_number_of_jobs"].iloc[0]:,.0f}'
+                            else f'{(tmp_df["est_number_of_jobs"].iloc[0]/tmp_df['total_working_age_population'].iloc[0]):,.2f}'
                     ], title='data definiton here'),
                     html.Br(),
                     html.Span([
@@ -278,20 +285,121 @@ def update_cards(clickData, bedrooms):
                 html.Label(
                     'Cost of Living',
                     style=label_style),
-                html.P('Hover over zip code to see details...', id='col-metrics')
+                html.P([
+                    html.Span([
+                        html.B([
+                            metric_labels['zhvi'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["zhvi"].iloc[0]) \
+                            else f'${tmp_df["zhvi"].iloc[0]:,.0f}'],
+                        title='data definition here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            metric_labels['median_real_estate_taxes'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["median_real_estate_taxes"].iloc[0]) \
+                            else f'${tmp_df["median_real_estate_taxes"].iloc[0]:,.0f}'
+                    ], title='data definiton here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            metric_labels['affordability_ratio'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["affordability_ratio"].iloc[0]) \
+                            else f'{tmp_df["affordability_ratio"].iloc[0]:.2f}'
+                    ], title='data definiton here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            "Home Prices Over/Under Valued",
+                            ': TBD'
+                        ]),
+                        # 'No Data' if np.isnan(tmp_df["median_income"].iloc[0]) \
+                        #     else f'${tmp_df["median_income"].iloc[0]:,.0f}/yr'
+                    ], title='data definition here')],
+                    style=paragraph_style)
+            ], width=3, style=card_style),
+            dbc.Col([
+                html.Label(
+                    'Quality of Life',
+                    style=label_style),
+                html.P([
+                    html.Span([
+                        html.B([
+                            "Appeal Index: TBD",
+                            # html.Sup('c'),
+                            # ': '
+                        ])],
+                        # 'No Data' if np.isnan(tmp_df["zhvi"].iloc[0]) \
+                        #     else f'${tmp_df["zhvi"].iloc[0]:,.0f}'],
+                        title='data definition here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            metric_labels['mean_travel_time_to_work'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["mean_travel_time_to_work"].iloc[0]) \
+                            else f'{tmp_df["mean_travel_time_to_work"].iloc[0]}'
+                    ], title='data definiton here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            metric_labels['total_crime_rate'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["total_crime_rate"].iloc[0]) \
+                            else f'{tmp_df["total_crime_rate"].iloc[0]:.3f}'
+                    ], title='data definiton here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            metric_labels['mean_education_rating'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["mean_education_rating"].iloc[0]) \
+                            else f'{tmp_df["mean_education_rating"].iloc[0]:,.1f}'
+                    ], title='data definition here')],
+                    style=paragraph_style)
             ], width=3, style=card_style),
             dbc.Col([
                 html.Label(
                     'Demographic',
                     style=label_style),
-                html.P('Hover over zip code to see details...', id='demographic-metrics')
-            ], width=3, style=card_style),
-            dbc.Col([
-                html.Label(
-                    'Education',
-                    style=label_style),
-                html.P('Hover over zip code to see details...', id='education-metrics')
-                # dash_table.DataTable(tmp_gs1)
+                html.P([
+                    html.Span([
+                        html.B([
+                            metric_labels["total_working_age_population"],
+                            ": ",
+                            # html.Sup('c'),
+                            # ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["total_working_age_population"].iloc[0]) \
+                            else f'{tmp_df["total_working_age_population"].iloc[0]:,.0f}'],
+                        title='data definition here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            metric_labels['median_age'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["median_age"].iloc[0]) \
+                            else f'{tmp_df["median_age"].iloc[0]}'
+                    ], title='data definiton here'),
+                    html.Br(),
+                    html.Span([
+                        html.B([
+                            metric_labels['higher_education'],
+                            ': '
+                        ]),
+                        'No Data' if np.isnan(tmp_df["higher_education"].iloc[0]) \
+                            else f'{tmp_df["higher_education"].iloc[0]:.1f}%'
+                    ], title='data definiton here')],
+                    style=paragraph_style)
             ], width=3, style=card_style)
         ])
     ]

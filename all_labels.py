@@ -6,8 +6,11 @@ def get_metric_labels():
         'crimes_against_society_rate':'Crimes Against Society Rate',
         'economic_diversity_index':'Economic Diversity Index',
         'est_number_of_jobs':'Estimated Number of Jobs',
-        'higher_education': 'Education?',
+        'higher_education': '% Population with Higher Education',
         'income_growth_rate': 'Income Growth Rate',
+        'mean_education_rating':'Mean GreatSchools.org Rating',
+        'mean_travel_time_to_work':'Mean Commute Time (min)',
+        'median_age':'Median Age',
         'median_income':'Median Individual Income',
         'median_income_families':'Median Household Income',
         'median_monthly_housing_cost':'Median Monthly Housing Cost',
@@ -16,6 +19,7 @@ def get_metric_labels():
         'pct_higher_education':'% Adults with Higher Education',
         'pct_middle_aged_adults':'% Adults over 30?',
         'pct_young_adults':'% Adjusts under 30?',
-        'total_crime_rate':'Total Crime Rate',
+        'total_crime_rate':'Total Crime Rate (per cap)',
+        'total_working_age_population':'Population (Working Age)',
         'zhvi':'Zillow Home Value Index'
     }
