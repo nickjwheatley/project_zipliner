@@ -61,6 +61,7 @@ for label in metric_labels:
         df[label] = df[label].astype(float)
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
+app.title = 'Project Zipliner'
 app.layout = html.Div([
         # html.H4("Project Zipliner"),
         html.P(
@@ -243,6 +244,7 @@ def update_cards(clickData, bedrooms):
         ]
     zc = clickData['points'][0]['location']
     tmp_df = df.loc[(df.zip_code == zc) & (df.bedrooms == bedrooms)].copy()
+    jobs_per_person = (tmp_df["est_number_of_jobs"].iloc[0] / tmp_df['county_working_age_population'].iloc[0])
     tmp_gs = df_gs.loc[df_gs.zip_code == zc].copy()
     tmp_gs['rating_distance'] = tmp_gs.apply(lambda x: f'GS: {x.rating:.1f}/10  Avg Dist: {x.distance:.1f} Miles',
                                              axis=1)
@@ -274,7 +276,7 @@ def update_cards(clickData, bedrooms):
                             ': '
                         ]),
                         'No Data' if np.isnan(tmp_df["est_number_of_jobs"].iloc[0]) \
-                            else f'{(tmp_df["est_number_of_jobs"].iloc[0]/tmp_df['county_working_age_population'].iloc[0]):,.2f}'
+                            else f'{jobs_per_person:,.2f}'
                     ], title='data definiton here'),
                     html.Br(),
                     html.Span([
