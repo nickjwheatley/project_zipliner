@@ -153,7 +153,7 @@ def get_geo_json_codes(state_abbr, desired_zip_codes):
         'features': []
     }
     for zcb in all_zip_code_boundaries['features']:
-        if int(zcb['properties']['ZCTA5CE10']) in desired_zip_codes:
+        if zcb['properties']['ZCTA5CE10'] in desired_zip_codes:
             desired_zip_code_boundaries['features'].append(zcb)
 
     return desired_zip_code_boundaries

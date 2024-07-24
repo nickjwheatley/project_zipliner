@@ -7,7 +7,7 @@ import os
 import numpy as np
 from all_labels import get_metric_labels
 import plotly.express as px
-from data_extract import query_rds, get_rds_schema
+from data.data_extract import query_rds
 
 ON_HEROKU = os.getenv('ON_HEROKU')
 if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
@@ -28,15 +28,15 @@ else:
     background_callback_manager = DiskcacheManager(cache)
 
 # Get RDS Instance table names schema
-rds_schema = get_rds_schema()
-df_query = "SELECT * FROM prelim_merged_pivoted_snapshot;"
+# rds_schema = get_rds_schema()
+df_query = "SELECT * FROM all_data_current_snapshot_v1;"
 # df_zillow_query = "SELECT * FROM prelim_zillow_time_series;"
 df_gs_query = "SELECT * FROM great_schools_mean_ratings LIMIT 10;"
 
 # Read data from AWS RDS
-df = query_rds(df_query)
-# df_zillow_ts = query_rds(df_zillow_query)
-df_gs = query_rds(df_gs_query)
+df = query_rds(df_query, config_filepath='SECRETS.ini')
+# df_zillow_ts = query_rds(df_zillow_query, config_filepath='SECRETS.ini')
+df_gs = query_rds(df_gs_query, config_filepath='SECRETS.ini')
 
 # df = pd.read_csv('data/processed/prelim_merged_pivoted_data.csv')
 # df_zillow_ts = pd.read_parquet('data/processed/zillow_all_data.parquet')
@@ -159,7 +159,8 @@ def update_time_series_graph(clickData, bedrooms):
     if clickData is None:
         return px.line(title='Click on map regions to see trended home values')
     zc = clickData['points'][0]['location']
-    df_zillow_ts = query_rds(f"SELECT * FROM prelim_zillow_time_series WHERE zip_code = {int(zc)}")
+    df_zillow_ts = query_rds(f"SELECT * FROM zillow_time_series WHERE zip_code = {int(zc)}",
+                             config_filepath='SECRETS.ini')
     fig = render_time_series_plot(df_zillow_ts, zc, bedrooms)
     return fig
 
