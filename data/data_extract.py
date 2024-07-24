@@ -189,3 +189,17 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, cache=False):
 # refresh_all_data_in_rds(non_gs_force=False, gs_force=False)
 
 # print(get_rds_schema())
+
+# Create prelim time series dataset for testing/feedback
+# desired_metro_areas = [
+#     'Atlanta-Sandy Springs-Alpharetta, GA',
+#     'Phoenix-Mesa-Chandler, AZ',
+#     'Provo-Orem, UT',
+#     'Salt Lake City, UT',
+#     'San Francisco-Oakland-Berkeley, CA',
+#     'San Jose-Sunnyvale-Santa Clara, CA',
+#     'Spokane-Spokane Valley, WA'
+# ]
+# zillow = get_all_zillow_data(False, False)
+# zillow_subset = zillow.loc[zillow.metro.isin(desired_metro_areas)]
+# write_table('prelim_zillow_time_series',df=zillow_subset)

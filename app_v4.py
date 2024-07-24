@@ -38,11 +38,20 @@ df = query_rds(df_query, config_filepath='SECRETS.ini')
 # df_zillow_ts = query_rds(df_zillow_query, config_filepath='SECRETS.ini')
 df_gs = query_rds(df_gs_query, config_filepath='SECRETS.ini')
 
+# Create field for county working age population numbers (should move to data_extract eventually
+county_population = df[['county_name','total_working_age_population']].groupby('county_name').sum().reset_index()
+county_population.columns = ['county_name','county_working_age_population']
+df = df.merge(county_population, on='county_name', how='left')
+
+
 # df = pd.read_csv('data/processed/prelim_merged_pivoted_data.csv')
 # df_zillow_ts = pd.read_parquet('data/processed/zillow_all_data.parquet')
 # df_gs = pd.read_csv('data/processed/great_schools_mean_ratings.csv')
 
 metric_labels = get_metric_labels()
+# all_metro_areas = sorted(df.metro.dropna().unique())
+prelim_metro_areas = query_rds('SELECT DISTINCT metro FROM prelim_zillow_time_series ORDER BY metro',
+                               config_filepath='SECRETS.ini').metro.tolist()
 
 # Ensure proper data types
 df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
@@ -53,8 +62,14 @@ for label in metric_labels:
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
 app.layout = html.Div([
-        html.H1("Project Zipliner"),
-        html.P("Welcome to the Home Page"),
+        # html.H4("Project Zipliner"),
+        html.P(
+            ["Welcome to Project Zipliner, our preliminary web app intended to assist perspective home buyers know which zip codes to target for their home.",
+            html.Br(),
+            'Please provide your feedback ',
+            dcc.Link('HERE', href='https://forms.gle/kMcM4EqzEZXsRgDDA')
+        ]),
+        html.P(""),
         html.Div([
             dbc.Row([
                 dbc.Col([
@@ -63,7 +78,7 @@ app.layout = html.Div([
                         style={'font-weight': 'bold', "text-align": "center"}),
                     dcc.Dropdown(
                         id='metro-dropdown',
-                        options=[{'label': x, 'value': x} for x in sorted(df.metro.dropna().unique())],
+                        options=[{'label': x, 'value': x} for x in prelim_metro_areas],
                         searchable=True,
                         value='San Jose-Sunnyvale-Santa Clara, CA'
                     )
@@ -166,7 +181,7 @@ def update_time_series_graph(clickData, bedrooms):
     if clickData is None:
         return px.line(title='Click on map regions to see trended home values')
     zc = clickData['points'][0]['location']
-    df_zillow_ts = query_rds(f"SELECT * FROM zillow_time_series WHERE zip_code = {int(zc)}",
+    df_zillow_ts = query_rds(f"SELECT * FROM prelim_zillow_time_series WHERE zip_code = {int(zc)}",
                              config_filepath='SECRETS.ini')
     fig = render_time_series_plot(df_zillow_ts, zc, bedrooms)
     return fig
@@ -259,7 +274,7 @@ def update_cards(clickData, bedrooms):
                             ': '
                         ]),
                         'No Data' if np.isnan(tmp_df["est_number_of_jobs"].iloc[0]) \
-                            else f'{(tmp_df["est_number_of_jobs"].iloc[0]/tmp_df['total_working_age_population'].iloc[0]):,.2f}'
+                            else f'{(tmp_df["est_number_of_jobs"].iloc[0]/tmp_df['county_working_age_population'].iloc[0]):,.2f}'
                     ], title='data definiton here'),
                     html.Br(),
                     html.Span([
