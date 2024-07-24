@@ -68,7 +68,8 @@ app.layout = html.Div([
             ["Welcome to Project Zipliner, our preliminary web app intended to assist perspective home buyers know which zip codes to target for their home.",
             html.Br(),
             'Please provide your feedback ',
-            dcc.Link('HERE', href='https://forms.gle/kMcM4EqzEZXsRgDDA')
+            html.A("HERE", href="https://forms.gle/kMcM4EqzEZXsRgDDA", target="_blank")
+            # dcc.Link('HERE', href='https://forms.gle/kMcM4EqzEZXsRgDDA')
         ]),
         html.P(""),
         html.Div([

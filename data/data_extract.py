@@ -193,6 +193,7 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, cache=False):
 # Create prelim time series dataset for testing/feedback
 # desired_metro_areas = [
 #     'Atlanta-Sandy Springs-Alpharetta, GA',
+#     'Baltimore-Columbia-Towson, MD'
 #     'Phoenix-Mesa-Chandler, AZ',
 #     'Provo-Orem, UT',
 #     'Salt Lake City, UT',
