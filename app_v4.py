@@ -422,4 +422,4 @@ def update_cards(clickData, bedrooms):
     ]
 
 if __name__ == "__main__":
-    app.run_server(debug=False, port=int(os.environ.get('PORT', 8050)), host=host)
+    app.run_server(debug=True, port=int(os.environ.get('PORT', 8050)), host=host)
