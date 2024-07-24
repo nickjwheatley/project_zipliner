@@ -218,6 +218,11 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
     zip_code_boundaries = get_geo_json_codes(desired_state_abbr, desired_zip_codes)
 
     coords = zip_code_boundaries['features'][0]['geometry']['coordinates'][0]
+
+    # Catch incorrect nestings
+    if (len(coords) == 1) & (len(desired_zip_codes) != 1):
+        coords = coords[0]
+
     center = np.array(coords).mean(axis=0).tolist()
     fig = px.choropleth_mapbox(df.loc[(df.metro == metro_area) & (df.bedrooms == num_bedrooms)],
                         geojson=zip_code_boundaries,
