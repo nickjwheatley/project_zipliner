@@ -9,7 +9,7 @@ data_dictionary = {
     "Moved_Within_State": "Number of people who moved from a different county within the same state",
     "Moved_From_Other_State": "Number of people who moved from a different state",
     "Higher_Education": "Number of people with a Bachelor's degree or higher (sum of all education levels across different move types)",
-    "Owner_Renter_Ratio": "Ratio of owner-occupied to renter-occupied housing units",
+    "Owner_Renter_Ratio": "Ratio of those who moved into owner-occupied vs renter-occupied housing units",
     "Pct_Young_Adults": "Percentage of movers aged 25-34 years",
     "Pct_Middle_Aged_Adults": "Percentage of movers aged 35-54 years",
     "Pct_Higher_Education": "Percentage of movers with a Bachelor's degree or higher",
