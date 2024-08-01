@@ -1,6 +1,8 @@
 import pandas as pd
 import re
 import numpy as np
+import json
+from data.data_dict import *
 
 def name_standardizer(x):
     return '_'.join(x.split(' ')).lower()
@@ -19,9 +21,21 @@ def extract_highest_number(text):
 
 # df_zillow_ts = pd.read_parquet('../data/processed/zillow_all_data.parquet')
 
-df_merged = pd.read_parquet('../data/processed/merged_dataset_before_zillow.parquet')
-df_zillow = pd.read_csv('../data/processed/zillow_current_snapshot.csv')
+# df_merged = pd.read_parquet('../data/processed/merged_dataset_before_zillow.parquet')
+# df_zillow = pd.read_csv('../data/processed/zillow_current_snapshot.csv')
 df_gs = pd.read_csv('../data/processed/great_schools_mean_ratings.csv')
+
+data_dictionary_v2 = {}
+for key in data_dictionary.keys():
+    if key == 'zip':
+        revised_key = 'zip_code'
+    else:
+        revised_key = name_standardizer(key)
+    data_dictionary_v2[revised_key] = data_dictionary[key]
+
+with open('../data/data_dict_v2.json', 'w') as file:
+    json.dump(data_dictionary_v2, file, indent=2)
+
 
 # df_tmp = df_gs.loc[df_gs.zip_code == 95121]
 # df_tmp['rating_distance'] = df_tmp.apply(lambda x: f'GS: {x.rating:.1f}/10  Avg Dist: {x.distance:.1f} Miles', axis=1)

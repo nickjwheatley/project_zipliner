@@ -189,11 +189,15 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, cache=False):
 # refresh_all_data_in_rds(non_gs_force=False, gs_force=False)
 
 # print(get_rds_schema())
+# filename = 'processed/all_data_current_snapshot_v4.csv'
+# df = pd.read_csv(filename)
+# write_table('all_data_current_snapshot_v3',path=filename)
 
 # Create prelim time series dataset for testing/feedback
 # desired_metro_areas = [
 #     'Atlanta-Sandy Springs-Alpharetta, GA',
-#     'Baltimore-Columbia-Towson, MD'
+#     'Baltimore-Columbia-Towson, MD',
+#     'New York-Newark-Jersey City, NY-NJ-PA',
 #     'Phoenix-Mesa-Chandler, AZ',
 #     'Provo-Orem, UT',
 #     'Salt Lake City, UT',

@@ -1,0 +1,19 @@
+.custom-tooltip {
+    background-color: white !important;
+}
+
+.custom-tooltip .tooltip-inner {
+    background-color: white !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+    padding: 10px !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) !important;
+    z-index: 10000 !important;
+    width: 375px !important;
+    max-width: 375px !important;
+}
+
+.custom-tooltip .arrow::before {
+    border-top-color: white !important;
+    border-bottom-color: white !important;
+}
