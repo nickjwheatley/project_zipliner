@@ -53,9 +53,9 @@ df = df.merge(county_population, on='county_name', how='left')
 # df_gs = pd.read_csv('data/processed/great_schools_mean_ratings.csv')
 
 metric_labels = get_metric_labels()
-# all_metro_areas = sorted(df.metro.dropna().unique())
-prelim_metro_areas = query_rds('SELECT DISTINCT metro FROM prelim_zillow_time_series ORDER BY metro',
-                               config_filepath='SECRETS.ini').metro.tolist()
+all_metro_areas = sorted(df.metro.dropna().unique())
+# prelim_metro_areas = query_rds('SELECT DISTINCT metro FROM prelim_zillow_time_series ORDER BY metro',
+#                                config_filepath='SECRETS.ini').metro.tolist()
 
 # Ensure proper data types
 df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
@@ -84,7 +84,7 @@ app.layout = html.Div([
                         style={'font-weight': 'bold', "text-align": "center"}),
                     dcc.Dropdown(
                         id='metro-dropdown',
-                        options=[{'label': x, 'value': x} for x in prelim_metro_areas],
+                        options=[{'label': x, 'value': x} for x in all_metro_areas],
                         searchable=True,
                         value='San Jose-Sunnyvale-Santa Clara, CA'
                     )
@@ -168,7 +168,7 @@ app.layout = html.Div([
             Output('zillow-link','style'),
             {"visibility": "hidden"},
             {"visibility": "visible"}
-        ),
+        )
         # (
         #     Output("progress_status", "style"),
         #     {"visibility": "visible"},
@@ -194,6 +194,8 @@ def update_time_series_graph(clickData, bedrooms):
     zc = clickData['points'][0]['location']
     df_zillow_ts = query_rds(f"SELECT * FROM prelim_zillow_time_series WHERE zip_code = {int(zc)}",
                              config_filepath='SECRETS.ini')
+    # df_zillow_ts = query_rds(f"SELECT * FROM zillow_time_series_optimized WHERE idx_zip_code_optimized = {int(zc)}",
+    #                          config_filepath='SECRETS.ini')
     fig = render_time_series_plot(df_zillow_ts, zc, bedrooms)
     return fig
 
