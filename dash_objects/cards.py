@@ -34,7 +34,7 @@ def generate_table_body_rows(df_gs):
             html.Tr([
                 html.Td(series['School Type'], style=cell_style),
                 html.Td(series['Level'], style=cell_style),
-                html.Td(f'{round(series['Rating'],1)} out of 10', style=cell_style),
+                html.Td(f"{round(series['Rating'],1)}/10", style=cell_style),
                 html.Td(round(series['Distance (M)'],1), style=cell_style),
             ])
         )
