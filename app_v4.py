@@ -192,10 +192,10 @@ def update_time_series_graph(clickData, bedrooms):
     if clickData is None:
         return px.line(title='Hover over map regions to see trended home values')
     zc = clickData['points'][0]['location']
-    df_zillow_ts = query_rds(f"SELECT * FROM prelim_zillow_time_series WHERE zip_code = {int(zc)}",
-                             config_filepath='SECRETS.ini')
-    # df_zillow_ts = query_rds(f"SELECT * FROM zillow_time_series_optimized WHERE idx_zip_code_optimized = {int(zc)}",
+    # df_zillow_ts = query_rds(f"SELECT * FROM prelim_zillow_time_series WHERE zip_code = {int(zc)}",
     #                          config_filepath='SECRETS.ini')
+    df_zillow_ts = query_rds(f"SELECT * FROM zillow_time_series_optimized WHERE zip_code = {int(zc)}",
+                             config_filepath='SECRETS.ini')
     fig = render_time_series_plot(df_zillow_ts, zc, bedrooms)
     return fig
 

@@ -3,6 +3,7 @@ import re
 import numpy as np
 import json
 from data.data_dict import *
+from data.data_extract import query_rds
 
 def name_standardizer(x):
     return '_'.join(x.split(' ')).lower()
@@ -19,11 +20,15 @@ def extract_highest_number(text):
     # Return the highest number
     return max(numbers) if numbers else None
 
+# df_zillow = query_rds(f"SELECT * FROM zillow_time_series_optimized WHERE idx_zip_code_optimized = 95121", config_filepath='../SECRETS.ini')
+df_zillow = query_rds(f"SELECT * FROM zillow_time_series_optimized LIMIT 10", config_filepath='../SECRETS.ini')
+# df_zillow = query_rds(f"SELECT * FROM prelim_zillow_time_series WHERE zip_code = 95121", config_filepath='../SECRETS.ini')
+
 # df_zillow_ts = pd.read_parquet('../data/processed/zillow_all_data.parquet')
 
 # df_merged = pd.read_parquet('../data/processed/merged_dataset_before_zillow.parquet')
 # df_zillow = pd.read_csv('../data/processed/zillow_current_snapshot.csv')
-df_gs = pd.read_csv('../data/processed/great_schools_mean_ratings.csv')
+# df_gs = pd.read_csv('../data/processed/great_schools_mean_ratings.csv')
 
 data_dictionary_v2 = {}
 for key in data_dictionary.keys():
