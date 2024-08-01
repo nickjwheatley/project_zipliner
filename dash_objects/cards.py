@@ -74,7 +74,7 @@ def generate_card_element(el, items, df, df_gs, data_dictionary):
             ),
             html.Span(
                 'No Data' if np.isnan(df[el].iloc[0]) \
-                    else f'{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}',
+                    else f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
                 style={'float': 'right'}
             )],
             id=items['id'])
@@ -88,7 +88,7 @@ def generate_card_element(el, items, df, df_gs, data_dictionary):
             ),
             html.Span(
                 'No Data' if np.isnan(df[el].iloc[0]) \
-                    else f'{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}',
+                    else f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
                 style={'float': 'right'}
             )],
             title=data_dictionary[el]
