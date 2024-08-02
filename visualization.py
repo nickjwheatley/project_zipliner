@@ -231,6 +231,11 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
     if (len(coords) == 1) & (len(desired_zip_codes) != 1):
         coords = coords[0]
 
+    if desired_metric == 'zhvi':
+        fmt = ',.0f'
+    else:
+        fmt = True
+
     center = np.array(coords).mean(axis=0).tolist()
     fig = px.choropleth_mapbox(df.loc[(df.metro == metro_area) & (df.bedrooms == num_bedrooms)],
                         geojson=zip_code_boundaries,
@@ -245,7 +250,11 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
                             'city': 'City',
                             desired_metric: get_metric_labels()[desired_metric]
                         },
-                        hover_data=['city', 'zip_code', desired_metric],
+                        hover_data={
+                            'city':True,
+                            'zip_code':True,
+                            desired_metric: True
+                        },
                         title = f'{metro_area} - {num_bedrooms} bedrooms',
                         opacity=0.25,
                         center = {'lat': center[1], 'lon': center[0]},
@@ -267,6 +276,10 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
             y=1  # Set the y position of the legend (1 is the top, 0 is the bottom)
         )
     )
+
+    # fig.update_traces(
+    #     hovertemplate=f"Value: ${desired_metric:,.0f}<br>"  # Format number with comma separator
+    # )
 
     return fig
 
