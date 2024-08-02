@@ -30,32 +30,19 @@ else:
     background_callback_manager = DiskcacheManager(cache)
 
 # Get RDS Instance table names schema
-# rds_schema = get_rds_schema()
-df_query = "SELECT * FROM all_data_current_snapshot_v1;"
-# df_zillow_query = "SELECT * FROM prelim_zillow_time_series;"
-# df_gs_query = "SELECT * FROM great_schools_mean_ratings;"
-
 data_dictionary = json.load(open('data/data_dict_v2.json'))
 
 # Read data from AWS RDS
+df_query = "SELECT * FROM all_data_current_snapshot_v1;"
 df = query_rds(df_query, config_filepath='SECRETS.ini')
-# df_zillow_ts = query_rds(df_zillow_query, config_filepath='SECRETS.ini')
-# df_gs = query_rds(df_gs_query, config_filepath='SECRETS.ini')
 
 # Create field for county working age population numbers (should move to data_extract eventually
 county_population = df[['county_name','total_working_age_population']].groupby('county_name').sum().reset_index()
 county_population.columns = ['county_name','county_working_age_population']
 df = df.merge(county_population, on='county_name', how='left')
 
-
-# df = pd.read_csv('data/processed/prelim_merged_pivoted_data.csv')
-# df_zillow_ts = pd.read_parquet('data/processed/zillow_all_data.parquet')
-# df_gs = pd.read_csv('data/processed/great_schools_mean_ratings.csv')
-
 metric_labels = get_metric_labels()
 all_metro_areas = sorted(df.metro.dropna().unique())
-# prelim_metro_areas = query_rds('SELECT DISTINCT metro FROM prelim_zillow_time_series ORDER BY metro',
-#                                config_filepath='SECRETS.ini').metro.tolist()
 
 # Ensure proper data types
 df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
@@ -65,7 +52,7 @@ for label in metric_labels:
         df[label] = df[label].astype(float)
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
-app.title = 'Project Zipliner'
+app.title = 'Zipliner'
 app.layout = html.Div([
         # html.H4("Project Zipliner"),
         html.P(

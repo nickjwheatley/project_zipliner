@@ -143,6 +143,13 @@ def generate_populated_cards(df, df_gs, data_dictionary):
             }
         },
         'Cost of Living': {
+            'appeal_index': {
+                'sup': None,
+                'id':'None',
+                'format_prefix': '',
+                'format_suffix': '',
+                'value_format': '.2f'
+            },
             'zhvi': {
                 'sup': None,
                 'id':'None',
@@ -153,7 +160,7 @@ def generate_populated_cards(df, df_gs, data_dictionary):
             'median_real_estate_taxes': {
                 'sup': None,
                 'id':'None',
-                'format_prefix': '',
+                'format_prefix': '$',
                 'format_suffix': '',
                 'value_format': ',.0f'
             },

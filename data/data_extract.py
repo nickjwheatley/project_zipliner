@@ -10,6 +10,7 @@ import numpy as np
 import re
 from data.zillow_data import get_all_zillow_data
 from data.great_schools_data import extract_mean_great_schools_ratings
+from sklearn.preprocessing import MinMaxScaler
 
 def name_standardizer(x):
     """Function standardizes column name formats"""
@@ -120,7 +121,7 @@ def write_table(table_name, include_index=False, df=None, path=None, chunk = Non
     return
 
 
-def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, cache=False):
+def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_force=False, cache=False):
     """
     Refresh data from all data sources and load to AWS RDS
     :param non_gs_force: bool indicating whether to force a refresh from all non-GreatSchools.org data sources
@@ -130,7 +131,7 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, cache=False):
     """
     # Refresh Zillow Data
     print('REFRESHING ZILLOW DATA')
-    zillow = get_all_zillow_data(non_gs_force, cache)
+    zillow = get_all_zillow_data(non_gs_force, cache=True)
     zillow_current_snapshot = zillow.groupby(['zip_code','bedrooms']).last().reset_index()
 
     # Refresh GreatSchools.org Data
@@ -173,12 +174,62 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, cache=False):
 
     df_merged4.columns = [name_standardizer(col) for col in df_merged4.columns]
 
+    # Solve for missing metro areas
+    df_merged4['metro'] = df_merged4.apply(lambda x: f'{x.city}, {x.state}' if x.metro is None else x.metro, axis=1)
+
+    # Add Appeal Index
+    # generating additional features
+    df_merged4['prop_tax_zhvi_ratio'] = df_merged4['median_real_estate_taxes'] / df_merged4['zhvi']
+    df_merged4['job_opportunity_ratio'] = df_merged4['est_number_of_jobs'] / df_merged4['total_working_age_population']
+
+    # cleaning and preparing the data for normalization
+    df_clean = df_merged4.copy()
+    df_clean['mean_travel_time_to_work'] = pd.to_numeric(df_clean['mean_travel_time_to_work'], errors='coerce')
+    df_clean.replace([np.inf, -np.inf], np.nan, inplace=True)
+    normalize_columns = ['mean_education_rating', 'affordability_ratio', 'income_growth_rate', 'total_crime_rate',
+                         'prop_tax_zhvi_ratio', 'mean_travel_time_to_work', 'job_opportunity_ratio',
+                         'mean_education_distance']
+    for col in normalize_columns:
+        df_clean[f'normalized_{col}'] = df_clean[col]
+    normalize_columns = ['normalized_mean_education_rating', 'normalized_affordability_ratio',
+                         'normalized_income_growth_rate', 'normalized_total_crime_rate',
+                         'normalized_prop_tax_zhvi_ratio', 'normalized_mean_travel_time_to_work',
+                         'normalized_job_opportunity_ratio', 'normalized_mean_education_distance']
+
+    # normalziation group function
+    def normalize_group(group):
+        scaler = MinMaxScaler()
+        group[normalize_columns] = scaler.fit_transform(group[normalize_columns])
+        return group
+
+    # filling in null values with the mean for the other normalilzed values
+    df_filled = df_clean.fillna(df_clean[normalize_columns].mean())
+
+    # applying normlaization group function by metro area
+    df_filled = df_filled.groupby('metro').apply(normalize_group).reset_index(drop=True)
+
+    # adjusting normalized values for specific features to ensure higher values is a more appealing score
+    df_filled['normalized_affordability_ratio'] = 1 - df_filled['normalized_affordability_ratio']
+    df_filled['normalized_total_crime_rate'] = 1 - df_filled['normalized_total_crime_rate']
+    df_filled['normalized_prop_tax_zhvi_ratio'] = 1 - df_filled['normalized_prop_tax_zhvi_ratio']
+    df_filled['normalized_job_opportunity_ratio'] = 1 - df_filled['normalized_job_opportunity_ratio']
+    df_filled['normalized_mean_travel_time_to_work'] = 1 - df_filled['normalized_mean_travel_time_to_work']
+    df_filled['normalized_mean_education_distance'] = 1 - df_filled['normalized_mean_education_distance']
+
+    # creation of the appeal index
+    df_filled['appeal_index'] = df_filled[normalize_columns].sum(axis=1) / df_filled[normalize_columns].notna().sum(
+        axis=1)
+
+    df_filled = df_filled.drop(columns=normalize_columns)
+
     # Load data to AWS RDS
     print('LOADING CURRENT SNAPSHOT DATA TO RDS')
-    write_table('all_data_current_snapshot_v1',df=df_merged4) #current snapshot
+    write_table('all_data_current_snapshot_v1',df=df_filled) #current snapshot
 
-    print('LOADING ZILLOW TIME SERIES DATA TO RDS')
-    write_table('zillow_time_series', df=zillow, chunk=5000000)  # Zillow time series (takes a while)
+    if time_series_force:
+        print('LOADING ZILLOW TIME SERIES DATA TO RDS')
+        write_table('zillow_time_series', df=zillow, chunk=5000000)  # Zillow time series (takes a while)
+
     if gs_force:
         print('LOADING GREAT SCHOOLS DATA TO RDS')
         write_table('great_schools_mean_ratings', df=df_gs) #GreatSchools.org data
@@ -186,7 +237,7 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, cache=False):
 
 
 # Set force to True to trigger a hard refresh for all data_sources
-# refresh_all_data_in_rds(non_gs_force=False, gs_force=False)
+# refresh_all_data_in_rds(non_gs_force=False, time_series_force=False, gs_force=False)
 
 # print(get_rds_schema())
 # filename = 'processed/all_data_current_snapshot_v4.csv'

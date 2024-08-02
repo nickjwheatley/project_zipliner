@@ -169,6 +169,10 @@ def render_choropleth_map(df, metro_area, desired_metric, num_bedrooms):
     desired_zip_codes = df.loc[df.metro == metro_area, 'zip_code'].unique().tolist()
     desired_state_abbr = df.loc[df.metro == metro_area,'state'].iloc[0]
     zip_code_boundaries = get_geo_json_codes(desired_state_abbr, desired_zip_codes)
+    if desired_metric == 'zhvi':
+        fmt = ',.0f'
+    else:
+        fmt = True
 
     fig = px.choropleth(df.loc[(df.metro == metro_area) & (df.bedrooms == num_bedrooms)],
                         geojson=zip_code_boundaries,
@@ -183,7 +187,11 @@ def render_choropleth_map(df, metro_area, desired_metric, num_bedrooms):
                             'city': 'City',
                             desired_metric: get_metric_labels()[desired_metric]
                         },
-                        hover_data=['city', 'zip_code', desired_metric],
+                        hover_data={
+                            'city':True,
+                            'zip_code':True,
+                            desired_metric:True
+                        },
                         title = f'{metro_area} - {num_bedrooms} bedrooms'
                         # width = 1500,
                         # height = 500
@@ -277,6 +285,7 @@ def render_time_series_plot(df, zip_code, bedrooms):
             'zhvi':'Zillow Home Value Index',
             'date':'Date'
         },
+        hover_data={'zhvi':True},
         title = f'Zillow Home Values for {zip_code}'
     )
 

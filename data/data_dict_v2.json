@@ -40,5 +40,6 @@
   "total_working_age_population": "Total population aged 20-64 years in the ZIP code area",
   "zhvi": "Zillow Home Value Index: Median home price for a given size of single family residential homes of a given size",
   "mean_education_rating": "Mean GreatSchools.org school ratings for public schools in a given zip code (hover for more details)",
-  "total_crime_rate": "tbd"
+  "total_crime_rate": "tbd",
+  "appeal_index": "tbd"
 }

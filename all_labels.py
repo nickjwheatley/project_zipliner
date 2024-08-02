@@ -1,6 +1,7 @@
 def get_metric_labels():
     return {
         'affordability_ratio':'Affordability Ratio',
+        'appeal_index':'Appeal Index',
         'crimes_against_persons_rate':'Crimes Against Persons Rate',
         'crimes_against_property_rate':'Crimes Against Property Rate',
         'crimes_against_society_rate':'Crimes Against Society Rate',
