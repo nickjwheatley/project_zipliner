@@ -48,7 +48,7 @@ all_metro_areas = sorted(df.metro.dropna().unique())
 df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
 df['median_age'] = df['median_age'].replace('-',np.nan)
 for label in metric_labels:
-    if df[label].dtypes == 'O':
+    if (df[label].dtypes == 'O') & (label != 'home_valuation_status'):
         df[label] = df[label].astype(float)
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
@@ -82,7 +82,7 @@ app.layout = html.Div([
                         style={'font-weight': 'bold', "text-align": "center"}),
                     dcc.Dropdown(
                         id='bedrooms-dropdown',
-                        options=[{'label': x, 'value': x} for x in sorted(df.bedrooms.dropna().unique())],
+                        options=[{'label': x, 'value': x} if x != 5 else {'label': '5+', 'value': 5} for x in sorted(df.bedrooms.dropna().unique())],
                         searchable=True,
                         value=4
                     )

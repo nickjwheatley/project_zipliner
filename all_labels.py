@@ -8,6 +8,7 @@ def get_metric_labels():
         'economic_diversity_index':'Economic Diversity Index',
         'est_number_of_jobs':'Estimated Number of Jobs',
         'higher_education': '% Population with Higher Education',
+        'home_valuation_status':'Home Price Valuation',
         'income_growth_rate': 'Income Growth Rate',
         'mean_education_rating':'Mean GreatSchools.org Rating',
         'mean_travel_time_to_work':'Mean Commute Time (min)',

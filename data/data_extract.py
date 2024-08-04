@@ -11,6 +11,23 @@ import re
 from data.zillow_data import get_all_zillow_data
 from data.great_schools_data import extract_mean_great_schools_ratings
 from sklearn.preprocessing import MinMaxScaler
+from all_labels import get_metric_labels
+from sklearn.linear_model import LinearRegression
+
+
+def assign_non_nan_value(ser):
+    """Helper function in solving for missing values in dataframe. Returns first non-nan value in regional averages"""
+    val, county_val, state_val, country_val = ser.values
+
+    if not np.isnan(val):
+        return val
+    elif not np.isnan(county_val):
+        return county_val
+    elif not np.isnan(state_val):
+        return state_val
+    else:
+        return country_val
+
 
 def name_standardizer(x):
     """Function standardizes column name formats"""
@@ -177,13 +194,127 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
     # Solve for missing metro areas
     df_merged4['metro'] = df_merged4.apply(lambda x: f'{x.city}, {x.state}' if x.metro is None else x.metro, axis=1)
 
-    # Add Appeal Index
+    # Solve for missing data
+    raw_metric_labels = list(get_metric_labels().keys())
+    metric_labels = []
+    for col in raw_metric_labels:
+        if col in df_merged4.columns.tolist():
+            metric_labels.append(col)
+
+
+    # Ensure correct data types
+    df_merged4['mean_travel_time_to_work'] = df_merged4['mean_travel_time_to_work'].replace('N', np.nan)
+    df_merged4['mean_travel_time_to_work'] = df_merged4['mean_travel_time_to_work'].replace('<NA>', np.nan)
+    df_merged4['median_age'] = df_merged4['median_age'].replace('-', np.nan)
+    for label in metric_labels:
+        if df_merged4[label].dtypes in ['O','string']:
+            df_merged4[label] = df_merged4[label].astype(float)
+
+    value_cols = []
+    for col in df_merged4.columns:
+        if (df_merged4[col].dtypes not in ['O','string']) & (col not in ['zip_code', 'bedrooms', 'county_fips']):
+            value_cols.append(col)
+
+    df_county = df_merged4[['county_name', 'bedrooms'] + value_cols].groupby(['county_name', 'bedrooms']).mean().reset_index()
+    df_county.columns = ['county_name', 'bedrooms'] + [col + '_county_mean' for col in df_county.columns if
+                                                       col not in ['county_name', 'bedrooms']]
+
+    df_state = df_merged4[['state_name', 'bedrooms'] + value_cols].groupby(['state_name', 'bedrooms']).mean().reset_index()
+    df_state.columns = ['state_name', 'bedrooms'] + [col + '_state_mean' for col in df_state.columns if
+                                                     col not in ['state_name', 'bedrooms']]
+
+    df_country = df_merged4[['bedrooms'] + value_cols].groupby(['bedrooms']).mean().reset_index()
+    df_country.columns = ['bedrooms'] + [col + '_country_mean' for col in df_country.columns if col not in ['bedrooms']]
+
+    df1 = df_merged4.merge(df_county, on=['county_name', 'bedrooms'], how='left')
+    df2 = df1.merge(df_state, on=['state_name', 'bedrooms'], how='left')
+    df3 = df2.merge(df_country, on=['bedrooms'], how='left')
+
+    print('SOLVING FOR MISSING VALUES USING COUNTY, STATE, AND COUNTRY AVERAGES')
+    total_rows = df3.shape[0]
+    for col in value_cols:
+        # Only fill for NA in columns with missing data
+        pre_row_count = df3[col].count()
+        if df3[col].count() == total_rows:
+            continue
+
+        df3[col] = df3[[col, col + '_county_mean', col + '_state_mean', col + '_country_mean', ]].apply(
+            assign_non_nan_value, axis=1)
+
+    # Drop averaged columns for missing values
+    df3.drop(
+        [col for col in df3.columns if ('_county_mean' in col) | ('_state_mean' in col) | ('_country_mean' in col)],
+        axis=1, inplace=True)
+
     # generating additional features
-    df_merged4['prop_tax_zhvi_ratio'] = df_merged4['median_real_estate_taxes'] / df_merged4['zhvi']
-    df_merged4['job_opportunity_ratio'] = df_merged4['est_number_of_jobs'] / df_merged4['total_working_age_population']
+    df3['prop_tax_zhvi_ratio'] = df3['median_real_estate_taxes'] / df3['zhvi']
+    df3['job_opportunity_ratio'] = df3['est_number_of_jobs'] / df3['total_working_age_population']
+
+    # Clean infinite values
+    df3 = df3.replace((-np.inf, np.inf), 0)
+
+    # Create linear regression predicting home value
+    # Calculate regression prediction (country)
+    print('PREDICTING HOME VALUE')
+
+    # Remove fields that cause overfitting
+    # regression_cols = list(set(value_cols) - set(['appeal_index','prop_tax_zhvi_ratio','median_real_estate_taxes', 'affordability_ratio']))
+    regression_cols = [
+        'zhvi', 'mean_travel_time_to_work', 'median_age', 'no_of_housing_units_that_cost_less_$1000',
+        'no_of_housing_units_that_cost_$1000_to_$1999', 'no_of_housing_units_that_cost_$2000_to_$2999',
+        'no_of_housing_units_that_cost_$3000_plus', 'median_income', 'median_income_25_44', 'median_income_45_64',
+        'median_income_65_plus', 'median_income_families', 'income_growth_rate', 'economic_diversity_index',
+        'higher_education', 'owner_renter_ratio', 'pct_young_adults', 'pct_middle_aged_adults', 'pct_higher_education',
+        'crimes_against_persons_rate', 'crimes_against_property_rate', 'crimes_against_society_rate',
+        'total_crime_rate', 'total_working_age_population', 'mean_education_distance',
+        'mean_education_rating', 'est_number_of_jobs', 'job_opportunity_ratio']
+    X_cols = [col for col in regression_cols if col != 'zhvi']
+
+    # Predict home values at the state level
+    dfs = []
+    for state in sorted(df3.state_name.unique()):
+        for br in sorted(df3.bedrooms.unique()):
+            tmp_df = df3.loc[(df3.bedrooms == br) & (df3.state_name == state)].copy()
+            if tmp_df.shape[0] < 10:
+                tmp_df['predicted_home_value_state'] = np.nan
+            else:
+                X = tmp_df[X_cols]
+                y = tmp_df['zhvi']
+                reg = LinearRegression().fit(X, y)
+                tmp_df['predicted_home_value_state'] = reg.predict(tmp_df[X_cols])
+            dfs.append(tmp_df)
+
+    df4 = pd.concat(dfs)
+
+    # predict home value at the county level
+    df4['county_state'] = df4.apply(lambda x: f'{x.county_name}, {x.state}', axis=1)
+    dfs = []
+    # for state in list(df4.state_name.unique()):
+    for cs in sorted(df4.county_state.unique()):
+        for br in sorted(df4.bedrooms.unique()):
+            tmp_df = df4.loc[(df4.bedrooms == br) & (df4.county_state == cs)].copy()
+            if tmp_df.shape[0] < 20:
+                tmp_df['predicted_home_value'] = tmp_df['predicted_home_value_state']
+            else:
+                X = tmp_df[X_cols]
+                y = tmp_df['zhvi']
+                reg = LinearRegression().fit(X, y)
+                tmp_df['predicted_home_value'] = reg.predict(tmp_df[X_cols])
+            dfs.append(tmp_df)
+
+    df5 = pd.concat(dfs)
+    df5.drop(['county_state', 'predicted_home_value_state'], axis=1, inplace=True)
+
+    df5['home_price_difference'] = df5['zhvi'] - df5['predicted_home_value']
+    df5['home_price_difference_perc'] = df5['home_price_difference'] / df5['zhvi']
+    df5['home_valuation_status'] = 'Fairly Valued'
+    df5.loc[df5.home_price_difference_perc < -.05, 'home_valuation_status'] = 'Undervalued'
+    df5.loc[df5.home_price_difference_perc > .05, 'home_valuation_status'] = 'Overvalued'
+
+    # Add Appeal Index
 
     # cleaning and preparing the data for normalization
-    df_clean = df_merged4.copy()
+    df_clean = df5.copy()
     df_clean['mean_travel_time_to_work'] = pd.to_numeric(df_clean['mean_travel_time_to_work'], errors='coerce')
     df_clean.replace([np.inf, -np.inf], np.nan, inplace=True)
     normalize_columns = ['mean_education_rating', 'affordability_ratio', 'income_growth_rate', 'total_crime_rate',
@@ -234,7 +365,6 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
         print('LOADING GREAT SCHOOLS DATA TO RDS')
         write_table('great_schools_mean_ratings', df=df_gs) #GreatSchools.org data
     return
-
 
 # Set force to True to trigger a hard refresh for all data_sources
 # refresh_all_data_in_rds(non_gs_force=False, time_series_force=False, gs_force=False)

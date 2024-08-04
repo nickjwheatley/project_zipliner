@@ -73,8 +73,10 @@ def generate_card_element(el, items, df, df_gs, data_dictionary):
             ], style={'float': 'left', 'font-weight': 'bold'}
             ),
             html.Span(
-                'No Data' if np.isnan(df[el].iloc[0]) \
-                    else f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
+                # 'No Data' if np.isnan(df[el].iloc[0]) \
+                    # else f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
+
+                f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
                 style={'float': 'right'}
             )],
             id=items['id'])
@@ -87,8 +89,9 @@ def generate_card_element(el, items, df, df_gs, data_dictionary):
             ], style={'float': 'left', 'font-weight': 'bold'}
             ),
             html.Span(
-                'No Data' if np.isnan(df[el].iloc[0]) \
-                    else f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
+                # 'No Data' if np.isnan(df[el].iloc[0]) \
+                #     else f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
+                f"{items['format_prefix']}{df[el].iloc[0]:{items['value_format']}}{items['format_suffix']}",
                 style={'float': 'right'}
             )],
             title=data_dictionary[el]
@@ -157,6 +160,13 @@ def generate_populated_cards(df, df_gs, data_dictionary):
                 'format_suffix': '',
                 'value_format': ',.0f'
             },
+            'home_valuation_status': {
+                'sup': None,
+                'id': 'None',
+                'format_prefix': '',
+                'format_suffix': '',
+                'value_format': ''
+            },
             'median_real_estate_taxes': {
                 'sup': None,
                 'id':'None',
@@ -191,7 +201,7 @@ def generate_populated_cards(df, df_gs, data_dictionary):
                 'sup': None,
                 'id':'great_schools_ratings',
                 'format_prefix': '',
-                'format_suffix': '',
+                'format_suffix': '/10 (Hover)',
                 'value_format': '.1f'
             }
         },
