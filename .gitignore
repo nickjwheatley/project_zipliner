@@ -7,3 +7,4 @@ data/raw*
 *SECRETS.ini*
 *pycache*
 *cache*
+*.csv

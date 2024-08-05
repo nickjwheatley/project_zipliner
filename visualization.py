@@ -130,31 +130,32 @@ def get_state_name_from_abbreviation(state_abrv):
     return state_names[state_abrv]
 
 
-def get_geo_json_codes(state_abbr, desired_zip_codes):
+def get_geo_json_codes(state_abbr_lst, desired_zip_codes):
     """
     Retrieves the geo boundaries for all zip codes in the desired list.
-    :param state: string indicating long state name of where the zip codes reside
+    :param state_abbr_lst: list of strings indicating short state name of where the zip codes reside
     :param desired_zip_codes: list of zip codes in the desired metro area
     :return: dictionary containing the geo boundary codes of all desired zip codes
     """
-    # Create URL for geo_json_codes
-    base = 'https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/'
-    state = f'{state_abbr.lower()}_{get_state_name_from_abbreviation(state_abbr).lower()}'
-    suffix = '_zip_codes_geo.min.json'
-    geojson_url = f'{base}{state}{suffix}'
-
-    # Extract geojson boundaries for all zip codes in the state
-    with urlopen(geojson_url) as response:
-        all_zip_code_boundaries = json.load(response)
-
     # Filter zip code boundaries dictionary to zip codes in desired metro region
     desired_zip_code_boundaries = {
         'type': 'FeatureCollection',
         'features': []
     }
-    for zcb in all_zip_code_boundaries['features']:
-        if zcb['properties']['ZCTA5CE10'] in desired_zip_codes:
-            desired_zip_code_boundaries['features'].append(zcb)
+    for state_abbr in state_abbr_lst:
+        # Create URL for geo_json_codes
+        base = 'https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/'
+        state = f'{state_abbr.lower()}_{'_'.join(get_state_name_from_abbreviation(state_abbr).split(' ')).lower()}'
+        suffix = '_zip_codes_geo.min.json'
+        geojson_url = f'{base}{state}{suffix}'
+
+        # Extract geojson boundaries for all zip codes in the state
+        with urlopen(geojson_url) as response:
+            all_zip_code_boundaries = json.load(response)
+
+        for zcb in all_zip_code_boundaries['features']:
+            if zcb['properties']['ZCTA5CE10'] in desired_zip_codes:
+                desired_zip_code_boundaries['features'].append(zcb)
 
     return desired_zip_code_boundaries
 
@@ -167,8 +168,8 @@ def render_choropleth_map(df, metro_area, desired_metric, num_bedrooms):
     :return: plotly.express choropleth figure
     """
     desired_zip_codes = df.loc[df.metro == metro_area, 'zip_code'].unique().tolist()
-    desired_state_abbr = df.loc[df.metro == metro_area,'state'].iloc[0]
-    zip_code_boundaries = get_geo_json_codes(desired_state_abbr, desired_zip_codes)
+    desired_state_abbrs = df.loc[df.metro == metro_area,'state'].unique().tolist()
+    zip_code_boundaries = get_geo_json_codes(desired_state_abbrs, desired_zip_codes)
     if desired_metric == 'zhvi':
         fmt = ',.0f'
     else:
@@ -222,8 +223,8 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
     :return: plotly.express choropleth figure
     """
     desired_zip_codes = df.loc[df.metro == metro_area, 'zip_code'].unique().tolist()
-    desired_state_abbr = df.loc[df.metro == metro_area,'state'].iloc[0]
-    zip_code_boundaries = get_geo_json_codes(desired_state_abbr, desired_zip_codes)
+    desired_state_abbrs = df.loc[df.metro == metro_area, 'state'].unique().tolist()
+    zip_code_boundaries = get_geo_json_codes(desired_state_abbrs, desired_zip_codes)
 
     coords = zip_code_boundaries['features'][0]['geometry']['coordinates'][0]
 
@@ -285,7 +286,8 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
 
 
 def render_time_series_plot(df, zip_code, bedrooms):
-    viz_df = df.loc[(df.zip_code == int(zip_code)) & (df.bedrooms == int(bedrooms))].sort_values('date')
+    df.zip_code = df.zip_code.apply(lambda x: f'{x:05}')
+    viz_df = df.loc[(df.zip_code == zip_code) & (df.bedrooms == int(bedrooms))].sort_values('date')
 
     fig = px.line(
         viz_df,
