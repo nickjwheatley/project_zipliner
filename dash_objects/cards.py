@@ -134,14 +134,14 @@ def generate_populated_cards(df, df_gs, data_dictionary):
                 'sup': None,
                 'id':'None',
                 'format_prefix': '$',
-                'format_suffix': '/yr',
+                'format_suffix': '',
                 'value_format': ',.0f'
             },
             'median_income': {
                 'sup': None,
                 'id':'None',
                 'format_prefix': '$',
-                'format_suffix': '/yr',
+                'format_suffix': '',
                 'value_format': ',.0f'
             }
         },
@@ -198,10 +198,10 @@ def generate_populated_cards(df, df_gs, data_dictionary):
                 'value_format': '.3f'
             },
             'mean_education_rating': {
-                'sup': None,
+                'sup': 'h',
                 'id':'great_schools_ratings',
                 'format_prefix': '',
-                'format_suffix': '/10 (Hover)',
+                'format_suffix': '/10',
                 'value_format': '.1f'
             }
         },

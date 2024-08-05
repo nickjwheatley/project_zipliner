@@ -111,8 +111,13 @@ app.layout = html.Div([
         html.P([
             html.I([
                 html.Sup('c'),
-                'Data is only available at the county level'
-            ])
+                'Data at the county level'
+            ]),
+            html.Br(),
+            html.I([
+                html.Sup('h'),
+                'Hover for details'
+            ]),
         ],id='card-caveats'),
         html.Div([
             dcc.Loading(dcc.Graph(id='choropleth-graph'))
