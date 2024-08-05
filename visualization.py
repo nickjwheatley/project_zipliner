@@ -145,7 +145,7 @@ def get_geo_json_codes(state_abbr_lst, desired_zip_codes):
     for state_abbr in state_abbr_lst:
         # Create URL for geo_json_codes
         base = 'https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/'
-        state = f'{state_abbr.lower()}_{'_'.join(get_state_name_from_abbreviation(state_abbr).split(' ')).lower()}'
+        state = f"{state_abbr.lower()}_{'_'.join(get_state_name_from_abbreviation(state_abbr).split(' ')).lower()}"
         suffix = '_zip_codes_geo.min.json'
         geojson_url = f'{base}{state}{suffix}'
 
