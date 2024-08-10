@@ -1,5 +1,6 @@
 from openai import OpenAI
 from config import config
+import os
 
 def get_chatgpt_response(zip_code, config_filepath='SECRETS.ini'):
     """
@@ -8,7 +9,11 @@ def get_chatgpt_response(zip_code, config_filepath='SECRETS.ini'):
     :param api_key: string OpenAI API key
     :return: string response from chatGPT
     """
-    api_key = config(config_filepath, 'chatgpt')['key']
+    ON_HEROKU = os.getenv('ON_HEROKU')
+    if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
+        api_key = os.getenv('CHATGPT_KEY')
+    else:
+        api_key = config(config_filepath, 'chatgpt')['key']
 
     client=OpenAI(api_key=api_key)
 
