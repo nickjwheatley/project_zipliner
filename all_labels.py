@@ -19,8 +19,6 @@ def get_metric_labels():
         'median_real_estate_taxes':'Median Real Estate Taxes',
         'owner_renter_ratio':'Owner Renter Ratio',
         'pct_higher_education':'% Adults with Higher Education',
-        'pct_middle_aged_adults':'% Adults over 30?',
-        'pct_young_adults':'% Adjusts under 30?',
         'total_crime_rate':'Total Crime Rate (per cap)',
         'total_working_age_population':'Population (Working Age)',
         'zhvi':'Zillow Home Value Index'

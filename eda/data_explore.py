@@ -5,6 +5,7 @@ import json
 from data.data_dict import *
 from data.data_extract import query_rds
 from visualization import get_geo_json_codes, render_choropleth_map
+from dash_objects.chatgpt_object import get_chatgpt_response
 
 def name_standardizer(x):
     return '_'.join(x.split(' ')).lower()
@@ -30,6 +31,8 @@ def extract_highest_number(text):
 # df_merged = pd.read_parquet('../data/processed/merged_dataset_before_zillow.parquet')
 # df_zillow = pd.read_csv('../data/processed/zillow_current_snapshot.csv')
 # df_gs = pd.read_csv('../data/processed/great_schools_mean_ratings.csv')
+
+get_chatgpt_response('95121','../SECRETS.ini')
 
 df_query = "SELECT * FROM all_data_current_snapshot_v1 WHERE metro = 'New York-Newark-Jersey City, NY-NJ-PA';"
 df = query_rds(df_query, config_filepath='../SECRETS.ini')

@@ -10,6 +10,7 @@ import plotly.express as px
 from data.data_extract import query_rds
 import json
 from dash_objects.cards import generate_populated_cards
+from dash_objects.chatgpt_object import get_chatgpt_response
 
 ON_HEROKU = os.getenv('ON_HEROKU')
 if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
@@ -54,13 +55,8 @@ for label in metric_labels:
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
 app.title = 'Zipliner'
 app.layout = html.Div([
-        # html.H4("Project Zipliner"),
         html.P(
-            ["Welcome to Project Zipliner, our preliminary web app intended to assist perspective home buyers know which zip codes to target for their home.",
-            html.Br(),
-            'Please provide your feedback ',
-            html.A("HERE", href="https://forms.gle/kMcM4EqzEZXsRgDDA", target="_blank")
-            # dcc.Link('HERE', href='https://forms.gle/kMcM4EqzEZXsRgDDA')
+            ["Welcome to Zipliner! This application is designed to help prospective home buyers learn which regions to target for their future home."
         ]),
         html.P(""),
         html.Div([
@@ -107,7 +103,6 @@ app.layout = html.Div([
             dcc.Loading(html.Div(id='card-container')),
             is_open=True
         ),
-        # html.Br(),
         html.P([
             html.I([
                 html.Sup('c'),
@@ -125,7 +120,8 @@ app.layout = html.Div([
         html.Div(style={'display':'inline-block','width':'1%'}),
         html.Div([
             dcc.Loading(dcc.Graph(id='time-series-graph'))
-        ], style={'width':'35%','display':'inline-block'})
+        ], style={'width':'35%','display':'inline-block'}),
+        dcc.Loading(html.Div(id='chatgpt-container'))
     ])
 
 # Define the callback to update the graph
@@ -158,6 +154,11 @@ app.layout = html.Div([
         ),
         (
             Output('zillow-link','style'),
+            {"visibility": "hidden"},
+            {"visibility": "visible"}
+        ),
+        (
+            Output('chatgpt-container','style'),
             {"visibility": "hidden"},
             {"visibility": "visible"}
         )
@@ -207,6 +208,51 @@ def update_zillow_home_link(clickData):
     city = tmp_df['city'].item()
     state = tmp_df['state'].item()
     return f'https://www.zillow.com/{city.lower()}-{state.lower()}-{zc}/'
+
+
+@callback(
+    Output('chatgpt-container', 'children'),
+    [
+        Input('choropleth-graph','clickData')
+    ]
+)
+def update_chatgpt(clickData):
+    label_style = {
+        'font-weight': 'bold',
+        'text-align': 'center',
+        'font-size': '20px',
+        'color': '#161616'
+    }
+    paragraph_style = {
+        'color': '#676767'
+    }
+    card_style = {
+        'border': '2px solid #4d4d4d',
+        'padding': '5',
+        'paddingLeft': '20px',
+        'borderRadius': '5px',
+        'backgroundColor': 'white'
+    }
+    if clickData is None:
+        return dbc.Row([
+                dbc.Col([
+                    html.Label(
+                        'Zip Code Summary',
+                        style=label_style),
+                    html.P('Click zip code to see details...', style=paragraph_style)
+                ], style=card_style)])
+    else:
+        zc = clickData['points'][0]['location']
+        chatgpt_response = get_chatgpt_response(zc)
+        return dbc.Row([
+                dbc.Col([
+                    html.Label(
+                        f'Summary for {zc}',
+                        style=label_style),
+                    html.P(chatgpt_response, style=paragraph_style),
+                    html.I('Powered by ChatGPT')
+                ], style=card_style)])
+
 
 
 # Update metric cards by clicking on choropleth graph regions
