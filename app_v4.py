@@ -11,6 +11,7 @@ from data.data_extract import query_rds
 import json
 from dash_objects.cards import generate_populated_cards
 from dash_objects.chatgpt_object import get_chatgpt_response
+import gunicorn
 
 ON_HEROKU = os.getenv('ON_HEROKU')
 if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
@@ -53,6 +54,8 @@ for label in metric_labels:
         df[label] = df[label].astype(float)
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
+server = app.server
+
 app.title = 'Zipliner'
 app.layout = html.Div([
         html.P(
@@ -327,4 +330,4 @@ def update_cards(clickData, bedrooms):
     return generate_populated_cards(tmp_df, tmp_gs, data_dictionary)
 
 if __name__ == "__main__":
-    app.run_server(debug=True, port=int(os.environ.get('PORT', 8050)), host=host)
+    app.run_server(debug=False, port=int(os.environ.get('PORT', 8050)), host=host)
