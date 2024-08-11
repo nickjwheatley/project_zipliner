@@ -12,7 +12,6 @@ import json
 from dash_objects.cards import generate_populated_cards
 from dash_objects.chatgpt_object import get_chatgpt_response
 import gunicorn
-from whitenoise import WhiteNoise
 
 ON_HEROKU = os.getenv('ON_HEROKU')
 if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
@@ -56,7 +55,6 @@ for label in metric_labels:
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
 server = app.server
-server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/')
 
 app.title = 'Zipliner'
 app.layout = html.Div([
