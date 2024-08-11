@@ -12,6 +12,7 @@ import json
 from dash_objects.cards import generate_populated_cards
 from dash_objects.chatgpt_object import get_chatgpt_response
 import gunicorn
+import sys
 
 ON_HEROKU = os.getenv('ON_HEROKU')
 if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
@@ -35,23 +36,25 @@ else:
 data_dictionary = json.load(open('data/data_dict_v2.json'))
 
 # Read data from AWS RDS
-df_query = "SELECT * FROM all_data_current_snapshot_v1;"
-df = query_rds(df_query, config_filepath='SECRETS.ini')
-
-# Create field for county working age population numbers (should move to data_extract eventually
-county_population = df[['county_name','total_working_age_population']].groupby('county_name').sum().reset_index()
-county_population.columns = ['county_name','county_working_age_population']
-df = df.merge(county_population, on='county_name', how='left')
+all_metro_areas = query_rds('SELECT DISTINCT metro FROM all_data_current_snapshot_v1 ORDER BY metro',
+                            config_filepath='SECRETS.ini')['metro'].tolist()
+# df_query = "SELECT * FROM all_data_current_snapshot_v1;"
+# df = query_rds(df_query, config_filepath='SECRETS.ini')
+#
+# # Create field for county working age population numbers (should move to data_extract eventually
+# county_population = df[['county_name','total_working_age_population']].groupby('county_name').sum().reset_index()
+# county_population.columns = ['county_name','county_working_age_population']
+# df = df.merge(county_population, on='county_name', how='left')
 
 metric_labels = get_metric_labels()
-all_metro_areas = sorted(df.metro.dropna().unique())
+# all_metro_areas = sorted(df.metro.dropna().unique())
 
 # Ensure proper data types
-df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
-df['median_age'] = df['median_age'].replace('-',np.nan)
-for label in metric_labels:
-    if (df[label].dtypes == 'O') & (label != 'home_valuation_status'):
-        df[label] = df[label].astype(float)
+# df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
+# df['median_age'] = df['median_age'].replace('-',np.nan)
+# for label in metric_labels:
+#     if (df[label].dtypes == 'O') & (label != 'home_valuation_status'):
+#         df[label] = df[label].astype(float)
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], background_callback_manager=background_callback_manager)
 server = app.server
@@ -81,7 +84,7 @@ app.layout = html.Div([
                         style={'font-weight': 'bold', "text-align": "center"}),
                     dcc.Dropdown(
                         id='bedrooms-dropdown',
-                        options=[{'label': x, 'value': x} if x != 5 else {'label': '5+', 'value': 5} for x in sorted(df.bedrooms.dropna().unique())],
+                        options=[{'label': x, 'value': x} if x != 5 else {'label': '5+', 'value': 5} for x in list(range(1,6))],
                         searchable=True,
                         value=4
                     )
@@ -173,6 +176,19 @@ app.layout = html.Div([
     ]
 )
 def update_choropleth_graph(selected_metro_area, selected_num_bedrooms, selected_metric='zhvi'):
+    df_query = f"SELECT * FROM all_data_current_snapshot_v1 WHERE metro = '{selected_metro_area}' AND bedrooms = {selected_num_bedrooms};"
+    df = query_rds(df_query, config_filepath='SECRETS.ini')
+    county_population = df[['county_name','total_working_age_population']].groupby('county_name').sum().reset_index()
+    county_population.columns = ['county_name','county_working_age_population']
+    df = df.merge(county_population, on='county_name', how='left')
+
+    # Ensure proper data types
+    df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N',np.nan)
+    df['median_age'] = df['median_age'].replace('-',np.nan)
+    for label in metric_labels:
+        if (df[label].dtypes == 'O') & (label != 'home_valuation_status'):
+            df[label] = df[label].astype(float)
+
     fig = render_choropleth_mapbox(df, selected_metro_area, selected_metric, selected_num_bedrooms)
     return fig
 
@@ -207,6 +223,9 @@ def update_zillow_home_link(clickData):
     if clickData is None:
         return 'http://www.zillow.com'
     zc = clickData['points'][0]['location']
+    df_query = f"SELECT DISTINCT zip_code, city, state FROM all_data_current_snapshot_v1;"
+    df = query_rds(df_query, config_filepath='SECRETS.ini')
+
     tmp_df = df.loc[(df.zip_code == zc)].head(1)
     city = tmp_df['city'].item()
     state = tmp_df['state'].item()
@@ -263,10 +282,11 @@ def update_chatgpt(clickData):
     Output('card-container', 'children'),
     [
         Input('choropleth-graph','clickData'),
-        Input('bedrooms-dropdown','value')
+        Input('bedrooms-dropdown','value'),
+        Input('metro-dropdown','value')
     ]
 )
-def update_cards(clickData, bedrooms):
+def update_cards(clickData, bedrooms, metro):
     label_style = {
         'font-weight': 'bold',
         'text-align': 'center',
@@ -313,8 +333,20 @@ def update_cards(clickData, bedrooms):
             ])
         ]
     zc = clickData['points'][0]['location']
+    df_query = f"SELECT * FROM all_data_current_snapshot_v1 WHERE metro = '{metro}' AND bedrooms = {bedrooms};"
+    df = query_rds(df_query, config_filepath='SECRETS.ini')
+    county_population = df[['county_name', 'total_working_age_population']].groupby('county_name').sum().reset_index()
+    county_population.columns = ['county_name', 'county_working_age_population']
+    df = df.merge(county_population, on='county_name', how='left')
+
+    # Ensure proper data types
+    df['mean_travel_time_to_work'] = df['mean_travel_time_to_work'].replace('N', np.nan)
+    df['median_age'] = df['median_age'].replace('-', np.nan)
+    for label in metric_labels:
+        if (df[label].dtypes == 'O') & (label != 'home_valuation_status'):
+            df[label] = df[label].astype(float)
     tmp_df = df.loc[(df.zip_code == zc) & (df.bedrooms == bedrooms)].copy()
-    jobs_per_person = (tmp_df["est_number_of_jobs"].iloc[0] / tmp_df['county_working_age_population'].iloc[0])
+    # jobs_per_person = (tmp_df["est_number_of_jobs"].iloc[0] / tmp_df['county_working_age_population'].iloc[0])
 
     df_gs_query = f"SELECT * FROM great_schools_mean_ratings WHERE zip_code = '{str(int(zc))}'"
     df_gs = query_rds(df_gs_query, config_filepath='SECRETS.ini')
@@ -330,4 +362,4 @@ def update_cards(clickData, bedrooms):
     return generate_populated_cards(tmp_df, tmp_gs, data_dictionary)
 
 if __name__ == "__main__":
-    app.run_server(debug=False, port=int(os.environ.get('PORT', 8050)), host=host)
+    app.run_server(debug=True, port=int(os.environ.get('PORT', 8050)), host=host)
