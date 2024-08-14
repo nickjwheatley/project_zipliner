@@ -1,9 +1,25 @@
+"""
+This script processes and analyzes Census Bureau County Business Patterns (CBP) data for operating businesses
+in the United States from 2018 to 2022. It combines data from multiple years, standardizes geography,
+maps businesses to regions, calculates economic diversity indices, and engineers additional features.
+The final output is a parquet file containing processed and enriched data on large business establishments.
+"""
+
 import pandas as pd
 import numpy as np
 import json
 import csv
 
 def process_cbp_metadata(file_path):
+    """
+    Process the CBP metadata file and create a dictionary mapping column codes to descriptions.
+
+    Args:
+        file_path (str): Path to the CBP metadata CSV file.
+
+    Returns:
+        dict: A dictionary with column codes as keys and descriptions as values.
+    """
     cbp_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -14,6 +30,16 @@ def process_cbp_metadata(file_path):
     return cbp_dict
 
 def process_year_data(year, secondary_year):
+    """
+    Process CBP data for a specific year.
+
+    Args:
+        year (int): The primary year of the data.
+        secondary_year (int): The secondary year used in the file name.
+
+    Returns:
+        pandas.DataFrame: Processed dataframe for the specified year.
+    """
     file_path = f'CBP{year}.CB{secondary_year}00CBP-Data.csv'
     meta_data_file_path = 'CBP2018.CB1800CBP-Column-Metadata.csv'
 
@@ -26,10 +52,29 @@ def process_year_data(year, secondary_year):
     return df
 
 def get_majority_county(county_weights):
+    """
+    Determine the majority county from a JSON string of county weights.
+
+    Args:
+        county_weights (str): JSON string containing county weights.
+
+    Returns:
+        str: The FIPS code of the majority county.
+    """
     weights = json.loads(county_weights.replace("'", '"'))
     return max(weights, key=weights.get)
 
 def standardize_geography(cbp_df, zip_county_df):
+    """
+    Standardize geography by mapping county FIPS codes to ZIP codes.
+
+    Args:
+        cbp_df (pandas.DataFrame): The main CBP dataframe.
+        zip_county_df (pandas.DataFrame): Dataframe containing ZIP code to county mappings.
+
+    Returns:
+        pandas.DataFrame: Merged dataframe with standardized geography.
+    """
     cbp_df['county_fips'] = cbp_df['Geographic identifier code'].str[-5:].str.zfill(5)
 
     zip_county_df['majority_county_fips'] = zip_county_df['county_weights'].apply(get_majority_county)
@@ -41,6 +86,16 @@ def standardize_geography(cbp_df, zip_county_df):
     return merged_df
 
 def create_region_mapping(zip_county_df, regions_list):
+    """
+    Create a mapping of ZIP codes to custom regions.
+
+    Args:
+        zip_county_df (pandas.DataFrame): Dataframe containing ZIP code information.
+        regions_list (list): List of custom regions.
+
+    Returns:
+        dict: A dictionary mapping ZIP codes to regions.
+    """
     regions_dict = {region.lower(): region for region in regions_list[1:]}
     zip_to_region = {}
     for _, row in zip_county_df.iterrows():
@@ -50,11 +105,31 @@ def create_region_mapping(zip_county_df, regions_list):
     return zip_to_region
 
 def map_zips_to_regions(df, zip_to_region):
+    """
+    Map ZIP codes in the dataframe to their corresponding regions.
+
+    Args:
+        df (pandas.DataFrame): The main dataframe.
+        zip_to_region (dict): Dictionary mapping ZIP codes to regions.
+
+    Returns:
+        pandas.DataFrame: Dataframe with added 'Region' column.
+    """
+
     df['Region'] = df['zip'].map(zip_to_region)
     df['Region'] = df['Region'].fillna('Other')
     return df
 
 def calculate_economic_diversity_index(df):
+    """
+    Calculate the economic diversity index for each geographic area.
+
+    Args:
+        df (pandas.DataFrame): The main dataframe.
+
+    Returns:
+        pandas.Series: Series containing economic diversity index for each geographic area.
+    """
     if '2017 NAICS code' in df.columns:
         diversity_df = df.groupby(['Geographic Area Name', '2017 NAICS code'])['Number of establishments'].sum().unstack(fill_value=0)
         diversity_df = diversity_df.div(diversity_df.sum(axis=1), axis=0)
@@ -68,6 +143,15 @@ def calculate_economic_diversity_index(df):
         return None
 
 def engineer_features(df):
+    """
+    Engineer additional features for the dataset.
+
+    Args:
+        df (pandas.DataFrame): The main dataframe.
+
+    Returns:
+        pandas.DataFrame: Dataframe with engineered features.
+    """
     df['Number of establishments'] = pd.to_numeric(df['Number of establishments'], errors='coerce')
 
     if 'Year' in df.columns:
@@ -84,10 +168,34 @@ def engineer_features(df):
     return df
 
 def standardize_zip_codes(df, zip_column='zip'):
+    """
+    Standardize ZIP codes to ensure they are 5 digits.
+
+    Args:
+        df (pandas.DataFrame): The main dataframe.
+        zip_column (str): Name of the column containing ZIP codes.
+
+    Returns:
+        pandas.DataFrame: Dataframe with standardized ZIP codes.
+    """
     df[zip_column] = df[zip_column].astype(str).apply(lambda x: x.zfill(5))
     return df
 
 def process_operating_businesses_data():
+    """
+    Main function to process operating businesses data.
+
+    This function orchestrates the entire data processing pipeline, including:
+    - Loading data for multiple years
+    - Standardizing geography
+    - Mapping regions
+    - Engineering features
+    - Filtering for large establishments
+    - Cleaning and standardizing the final dataset
+
+    Returns:
+        pandas.DataFrame: The final processed and cleaned dataframe.
+    """
     # Process data for years 2018 to 2022
     years = range(2018, 2023)
     secondary_years = range(18, 23)
