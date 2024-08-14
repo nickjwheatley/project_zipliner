@@ -247,7 +247,7 @@ def main():
     processed_df = processed_df.rename(columns={'Area': 'zip'})
 
     # Load zip to county mapping
-    zips_to_counties = pd.read_csv('../uszips.xlsx - Sheet1.csv')
+    zips_to_counties = pd.read_csv('uszips.xlsx - Sheet1.csv')
     zips_to_counties['zip'] = zips_to_counties['zip'].astype(str).str.zfill(5)
 
     # Add county information
@@ -262,7 +262,7 @@ def main():
     processed_df['county_fips'] = processed_df['zip'].map(zip_to_county)
 
     # Load regions list and create region mapping
-    with open('../regions_list.txt', 'r') as f:
+    with open('regions_list.txt', 'r') as f:
         regions_list = f.read().splitlines()
 
     zip_to_region = create_region_mapping(zips_to_counties, regions_list)
