@@ -1,9 +1,28 @@
 """
-This script processes median income data from the American Community Survey.
-It cleans the data, creates columns/features representing various median income metrics such as median income between young vs old, median income between families vs non-families, and YoY income growth rate. Finally, it aggregates the data by zip code, county, and region.
+Median Income Data Processing Script
 
-The script reads data for multiple years, combines them, and produces a final
-cleaned dataset saved as a parquet file.
+This script processes median income data from various CSV files, cleans and combines the data,
+and produces a final dataset with income statistics by zip code and region.
+
+The script performs the following main steps:
+1. Loads and processes median income data from multiple years
+2. Cleans and standardizes the data
+3. Calculates income growth rates
+4. Maps zip codes to counties and regions
+5. Saves the final processed dataset as a Parquet file
+
+Requirements:
+- pandas
+- numpy
+
+Input files required:
+- ACSST5Y{year}.S1903-Data.csv files for years 2018-2022
+- ACSST5Y2022.S1903-Column-Metadata.csv
+- uszips.xlsx - Sheet1.csv
+- regions_list.txt
+
+Output:
+- median_income.parquet
 """
 
 import pandas as pd
@@ -13,13 +32,13 @@ import json
 
 def process_median_income_data(file_path):
     """
-    Process the metadata file to create a dictionary for column renaming.
+    Process median income data from a CSV file.
 
     Args:
-    file_path (str): Path to the metadata CSV file.
+    file_path (str): Path to the CSV file containing median income data.
 
     Returns:
-    dict: A dictionary mapping original column names to descriptive names.
+    dict: A dictionary mapping column names to their corresponding values.
     """
     median_income_data_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
@@ -32,10 +51,10 @@ def process_median_income_data(file_path):
 
 def process_year_data(year):
     """
-    Process commuter data for a specific year.
+    Process median income data for a specific year.
 
     Args:
-    year (int): The year of data to process.
+    year (int): The year for which to process data.
 
     Returns:
     pandas.DataFrame: Processed data for the specified year.
@@ -61,13 +80,13 @@ def process_year_data(year):
 
 def process_median_income(df):
     """
-    Process median income data by selecting relevant columns and calculating additional metrics.
+    Process and clean median income data.
 
     Args:
     df (pandas.DataFrame): Input DataFrame containing median income data.
 
     Returns:
-    pandas.DataFrame: Processed DataFrame with selected columns and additional calculated metrics.
+    pandas.DataFrame: Processed and cleaned median income data.
     """
     columns_to_keep = [
         'Geographic Area Name',
@@ -114,13 +133,13 @@ def process_median_income(df):
 
 def calculate_income_growth_rate(group):
     """
-    Calculate the Compound Annual Growth Rate (CAGR) for median income within a group.
+    Calculate the income growth rate for a group of data.
 
     Args:
-    group (pandas.DataFrame): A DataFrame containing median income data for a specific group (e.g., ZIP code).
+    group (pandas.DataFrame): A group of data for a specific area.
 
     Returns:
-    pandas.Series: A Series containing the calculated growth rate and the reason for the calculation result.
+    pandas.Series: Income growth rate and the reason for the calculation.
     """
     group = group.sort_values('Year')
     group = group.dropna(subset=['Median_Income'])
@@ -143,121 +162,116 @@ def calculate_income_growth_rate(group):
 
 def standardize_zip_codes(df, zip_column='Area'):
     """
-    Standardize zip codes to ensure they are 5 digits long.
+    Standardize zip codes in the DataFrame.
 
     Args:
-    df (pandas.DataFrame): Input dataframe.
+    df (pandas.DataFrame): Input DataFrame containing zip codes.
     zip_column (str): Name of the column containing zip codes.
 
     Returns:
-    pandas.DataFrame: Dataframe with standardized zip codes.
+    pandas.DataFrame: DataFrame with standardized zip codes.
     """
     df[zip_column] = df[zip_column].astype(str)
-    df[zip_column] = df[zip_column].apply(lambda x: x.zfill(5))
+
+    def pad_zip(zip_code):
+        try:
+            return zip_code.zfill(5)
+        except AttributeError:
+            return '00000'
+
+    df[zip_column] = df[zip_column].apply(pad_zip)
+
     return df
-
-def get_majority_county(county_weights):
-    """
-    Determine the majority county from a JSON string of county weights.
-
-    Args:
-    county_weights (str): JSON string of county weights.
-
-    Returns:
-    str: The FIPS code of the majority county.
-    """
-    try:
-        weights = json.loads(county_weights.replace("'", '"'))
-        return max(weights, key=weights.get)
-    except:
-        return None
 
 def create_region_mapping(zip_county_df, regions_list):
     """
     Create a mapping of zip codes to regions.
 
     Args:
-    zip_county_df (pandas.DataFrame): Dataframe with zip code and county information.
+    zip_county_df (pandas.DataFrame): DataFrame containing zip code and county information.
     regions_list (list): List of region names.
 
     Returns:
-    dict: A dictionary mapping zip codes to regions.
+    dict: Mapping of zip codes to regions.
     """
     regions_dict = {region.lower(): region for region in regions_list[1:]}
+
     zip_to_region = {}
     for _, row in zip_county_df.iterrows():
         city_state = f"{row['city']}, {row['state_id']}".lower()
         region = regions_dict.get(city_state, 'Other')
         zip_to_region[row['zip']] = region
+
     return zip_to_region
 
 def map_zips_to_regions(df, zip_to_region):
     """
-    Map zip codes in the dataframe to their corresponding regions.
+    Map zip codes to regions in the DataFrame.
 
     Args:
-    df (pandas.DataFrame): Input dataframe.
-    zip_to_region (dict): Dictionary mapping zip codes to regions.
+    df (pandas.DataFrame): Input DataFrame containing zip codes.
+    zip_to_region (dict): Mapping of zip codes to regions.
 
     Returns:
-    pandas.DataFrame: Dataframe with added 'Region' column.
+    pandas.DataFrame: DataFrame with added region information.
     """
     df['Region'] = df['zip'].map(zip_to_region)
     df['Region'] = df['Region'].fillna('Other')
     return df
 
-def process_median_income_data():
+def main():
     """
-    Main function to process median income data from multiple years, calculate growth rates,
-    and add county and region information.
-
-    Returns:
-    pandas.DataFrame: Fully processed median income data.
+    Main function to process median income data and create the final dataset.
     """
     # Process data for years 2018 to 2022
     years = range(2018, 2023)
     dfs = [process_year_data(year) for year in years]
+
+    # Combine all dataframes
     combined_df = pd.concat(dfs, ignore_index=True)
 
-    # Remove columns with 'Margin of Error'
-    combined_df = combined_df.loc[:, ~combined_df.columns.str.contains('Margin of Error', case=False)]
-
-    # Process median income
+    # Process median income data
     processed_df = process_median_income(combined_df)
-    processed_df = processed_df.rename(columns={'Area': 'zip'})
-
-    # Remove Puerto Rico zip codes
-    puerto_rico_zip_codes = ['00601', '00602', '00603', '00606', '00610', '00611', '00612', '00616', '00617', '00622', '00623', '00624', '00627', '00631', '00636', '00637', '00638', '00641', '00646', '00647', '00650', '00652', '00653', '00656', '00659', '00660', '00662', '00664', '00667', '00669', '00670', '00674', '00676', '00677', '00678', '00680', '00682', '00683', '00685', '00687', '00688', '00690', '00692', '00693', '00694', '00698', '00703', '00704', '00705', '00707', '00714', '00715', '00716', '00717', '00718', '00719', '00720', '00723', '00725', '00727', '00728', '00729', '00730', '00731', '00735', '00736', '00738', '00739', '00740', '00741', '00745', '00751', '00754', '00757', '00765', '00766', '00767', '00769', '00771', '00772', '00773', '00775', '00777', '00778', '00780', '00782', '00783', '00784', '00786', '00791', '00794', '00795', '00901', '00906', '00907', '00909', '00911', '00912', '00913', '00915', '00917', '00918', '00920', '00921', '00923', '00924', '00925', '00926', '00927', '00934', '00936', '00949', '00950', '00951', '00952', '00953', '00956', '00957', '00959', '00960', '00961', '00962', '00965', '00966', '00968', '00969', '00971', '00976', '00979', '00982', '00983', '00985', '00987']
-    processed_df = processed_df[~processed_df['zip'].isin(puerto_rico_zip_codes)]
 
     # Calculate income growth rate
-    result = processed_df.groupby('zip').apply(calculate_income_growth_rate).reset_index()
-    processed_df = processed_df.merge(result, on='zip', how='left')
+    result = processed_df.groupby('Area').apply(calculate_income_growth_rate).reset_index()
+    processed_df = processed_df.merge(result, on='Area', how='left')
+
+    # Filter and clean data
     processed_df = processed_df[processed_df['Growth_Rate_Reason'] == 'Calculated']
-
-    # Drop unnecessary columns
     processed_df = processed_df.drop(columns=['Median_Income_White', 'Median_Income_Black', 'Median_Income_Asian', 'Median_Income_Hispanic', 'Growth_Rate_Reason'])
-
-    # Remove rows with NaN values
     processed_df = processed_df.dropna()
 
     # Standardize zip codes
     processed_df = standardize_zip_codes(processed_df)
+    processed_df = processed_df.rename(columns={'Area': 'zip'})
+
+    # Load zip to county mapping
+    zips_to_counties = pd.read_csv('../uszips.xlsx - Sheet1.csv')
+    zips_to_counties['zip'] = zips_to_counties['zip'].astype(str).str.zfill(5)
 
     # Add county information
-    zips_to_counties = pd.read_csv('uszips.xlsx - Sheet1.csv')
-    zips_to_counties['zip'] = zips_to_counties['zip'].astype(str).str.zfill(5)
+    def get_majority_county(county_weights):
+        try:
+            weights = json.loads(county_weights.replace("'", '"'))
+            return max(weights, key=weights.get)
+        except:
+            return None
+
     zip_to_county = {row['zip']: get_majority_county(row['county_weights']) for _, row in zips_to_counties.iterrows()}
     processed_df['county_fips'] = processed_df['zip'].map(zip_to_county)
 
-    # Add region information
-    with open('regions_list.txt', 'r') as f:
+    # Load regions list and create region mapping
+    with open('../regions_list.txt', 'r') as f:
         regions_list = f.read().splitlines()
-    zip_to_region = create_region_mapping(zips_to_counties, regions_list)
-    final_df = map_zips_to_regions(processed_df, zip_to_region)
 
-    return final_df
+    zip_to_region = create_region_mapping(zips_to_counties, regions_list)
+
+    # Map zips to regions
+    final_df = map_zips_to_regions(processed_df, zip_to_region)
+    final_df = final_df.dropna()
+    # Save the final dataset
+    final_df.to_parquet('median_income.parquet')
 
 if __name__ == "__main__":
-    final_df = process_median_income_data()
-    final_df.to_parquet('median_income.parquet')
+    main()
