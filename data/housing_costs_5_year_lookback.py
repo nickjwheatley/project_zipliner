@@ -7,6 +7,8 @@ years, combines them, and produces a final cleaned dataset saved as a parquet fi
 The processed data includes information on median monthly housing costs,
 real estate taxes, and derived metrics such as the number of housing units within certain price ranges and
 affordability measures.
+
+Download link: `https://data.census.gov/table?q=S2506:%20Financial%20Characteristics%20for%20Housing%20Units%20With%20a%20Mortgage&g=010XX00US$8600000`
 """
 
 import requests
