@@ -1,9 +1,27 @@
+"""
+This script processes commuter characteristics data from the American Community Survey.
+It cleans the data, creates columns/features representing "ranges" of commute times,
+and aggregates the data by zip code, county, and region.
+
+The script reads data for multiple years, combines them, and produces a final
+cleaned dataset saved as a parquet file.
+"""
+
 import pandas as pd
 import csv
 import numpy as np
 import json
 
 def process_metadata(file_path):
+    """
+    Process the metadata file to create a dictionary for column renaming.
+
+    Args:
+    file_path (str): Path to the metadata CSV file.
+
+    Returns:
+    dict: A dictionary mapping original column names to descriptive names.
+    """
     metadata_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -14,6 +32,15 @@ def process_metadata(file_path):
     return metadata_dict
 
 def process_year_data(year):
+    """
+    Process commuter data for a specific year.
+
+    Args:
+    year (int): The year of data to process.
+
+    Returns:
+    pandas.DataFrame: Processed data for the specified year.
+    """
     file_path = f'ACSST5Y{year}.S0801-Data.csv'
     meta_data_file_path = 'ACSST5Y2022.S0801-Column-Metadata.csv'
 
@@ -35,6 +62,15 @@ def process_year_data(year):
     return df
 
 def calculate_commute_time_groups(df):
+    """
+    Calculate commute time groups and percentages.
+
+    Args:
+    df (pandas.DataFrame): Input dataframe with commute time data.
+
+    Returns:
+    pandas.DataFrame: Dataframe with added commute time group percentages.
+    """
     commute_columns = [
         'Estimate!!Total!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!Less than 10 minutes',
         'Estimate!!Total!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!10 to 14 minutes',
@@ -57,10 +93,29 @@ def calculate_commute_time_groups(df):
     return df
 
 def standardize_zip_codes(df, zip_column='zip'):
+    """
+    Standardize zip codes to ensure they are 5 digits long.
+
+    Args:
+    df (pandas.DataFrame): Input dataframe.
+    zip_column (str): Name of the column containing zip codes.
+
+    Returns:
+    pandas.DataFrame: Dataframe with standardized zip codes.
+    """
     df[zip_column] = df[zip_column].astype(str).apply(lambda x: x.zfill(5))
     return df
 
 def get_majority_county(county_weights):
+    """
+    Determine the majority county from a JSON string of county weights.
+
+    Args:
+    county_weights (str): JSON string of county weights.
+
+    Returns:
+    str: The FIPS code of the majority county.
+    """
     try:
         weights = json.loads(county_weights.replace("'", '"'))
         return max(weights, key=weights.get)
@@ -68,6 +123,16 @@ def get_majority_county(county_weights):
         return None
 
 def create_region_mapping(zip_county_df, regions_list):
+    """
+    Create a mapping of zip codes to regions.
+
+    Args:
+    zip_county_df (pandas.DataFrame): Dataframe with zip code and county information.
+    regions_list (list): List of region names.
+
+    Returns:
+    dict: A dictionary mapping zip codes to regions.
+    """
     regions_dict = {region.lower(): region for region in regions_list[1:]}
     zip_to_region = {}
     for _, row in zip_county_df.iterrows():
@@ -77,11 +142,31 @@ def create_region_mapping(zip_county_df, regions_list):
     return zip_to_region
 
 def map_zips_to_regions(df, zip_to_region):
+    """
+    Map zip codes in the dataframe to their corresponding regions.
+
+    Args:
+    df (pandas.DataFrame): Input dataframe.
+    zip_to_region (dict): Dictionary mapping zip codes to regions.
+
+    Returns:
+    pandas.DataFrame: Dataframe with added 'Region' column.
+    """
     df['Region'] = df['zip'].map(zip_to_region)
     df['Region'] = df['Region'].fillna('Other')
     return df
 
 def process_commuter_data():
+    """
+    Main function to process commuter data.
+
+    This function orchestrates the entire data processing pipeline, including
+    reading data for multiple years, combining them, calculating commute range columns,
+    and adding geographic information.
+
+    Returns:
+    pandas.DataFrame: The final processed dataframe.
+    """
     # Process data for years 2018 to 2022
     years = range(2018, 2023)
     dfs = [process_year_data(year) for year in years]
