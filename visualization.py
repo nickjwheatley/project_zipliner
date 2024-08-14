@@ -194,8 +194,6 @@ def render_choropleth_map(df, metro_area, desired_metric, num_bedrooms):
                             desired_metric:True
                         },
                         title = f'{metro_area} - {num_bedrooms} bedrooms'
-                        # width = 1500,
-                        # height = 500
                         )
 
     fig.update_layout(
@@ -260,8 +258,6 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
                         opacity=0.25,
                         center = {'lat': center[1], 'lon': center[0]},
                         zoom = 8
-                        # width = 1500,
-                        # height = 500
                         )
 
     fig.update_layout(
@@ -278,14 +274,17 @@ def render_choropleth_mapbox(df, metro_area, desired_metric, num_bedrooms):
         )
     )
 
-    # fig.update_traces(
-    #     hovertemplate=f"Value: ${desired_metric:,.0f}<br>"  # Format number with comma separator
-    # )
-
     return fig
 
 
 def render_time_series_plot(df, zip_code, bedrooms):
+    """
+    Create a plotly line plot showing zillow home values as a time series
+    :param df: pandas dataframe containing zillow data
+    :param zip_code: str indicating target zip code
+    :param bedrooms: int indicating desired number of bedrooms
+    :return: plotly line plot
+    """
     df.zip_code = df.zip_code.apply(lambda x: f'{x:05}')
     viz_df = df.loc[(df.zip_code == zip_code) & (df.bedrooms == int(bedrooms))].sort_values('date')
 
@@ -317,6 +316,7 @@ def render_time_series_plot(df, zip_code, bedrooms):
 
 
 def make_progress_graph(progress, total):
+    """Return a go graph showing load progress"""
     progress_graph = (
         go.Figure(data=[go.Bar(x=[progress])])
         .update_xaxes(range=[0, total])

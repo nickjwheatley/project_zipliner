@@ -42,7 +42,7 @@
   "mean_education_rating": "Mean GreatSchools.org school ratings for public schools in a given zip code (hover for more details)",
   "total_crime_rate": "Crime rate per capita",
   "appeal_index": "Index indicating the 'appeal' of a region. The higher the index, the better the appeal. It's a weighted average of multiple regions such as education ratings, affordability, income growth, crime rate, commute time, etc.",
-  "home_valuation_status": "tbd",
+  "home_valuation_status": "Estimation of whether a region is over or undervalued using linear regression at the county level",
   "crimes_against_property": "Crimes that involve the theft, damage, or destruction of someone else’s property. These crimes do not involve harm to another person.",
   "crimes_against_society": "Crimes that violate societal laws or norms and are typically considered offenses against the community or society as a whole. These crimes often do not have a direct victim (e.g. gambling, drug offenses, etc).",
   "crimes_against_persons": "Crimes that cause physical or emotional harm to another person. These crimes involve direct interaction with the victim."

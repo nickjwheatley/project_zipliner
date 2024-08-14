@@ -13,6 +13,7 @@ from data.great_schools_data import extract_mean_great_schools_ratings
 from sklearn.preprocessing import MinMaxScaler
 from all_labels import get_metric_labels
 from sklearn.linear_model import LinearRegression
+from data.merge import merge_datasets
 
 
 def assign_non_nan_value(ser):
@@ -157,12 +158,13 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
 
     # Refresh all other data
     print('REFRESHING OTHER DATA')
+    # merged_sans_zillow = merge_datasets() # Run for a live refresh of non-zillow data
     merged_sans_zillow = pd.read_parquet('raw/merged_dataset_before_zillow_V2.parquet')
 
     # Merge Zillow and non-Zillow current snapshots
     print('CLEANING DATA')
     zillow_current_snapshot.zip_code = zillow_current_snapshot.zip_code.apply(lambda x: f'{x:05}')
-    great_schools.zip_code = great_schools.zip_code.apply(lambda x: f'{x:05}')
+    great_schools.zip_code = great_schools.zip_code.apply(lambda x: f'{x:05}') #format zip code to five digits
     df_gs = great_schools.loc[
         (great_schools.type == 'public')].drop(['level_family', 'type'], axis=1) \
         .groupby('zip_code').mean().reset_index().rename(
@@ -200,7 +202,6 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
     for col in raw_metric_labels:
         if col in df_merged4.columns.tolist():
             metric_labels.append(col)
-
 
     # Ensure correct data types
     df_merged4['mean_travel_time_to_work'] = df_merged4['mean_travel_time_to_work'].replace('N', np.nan)
@@ -366,26 +367,7 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
         write_table('great_schools_mean_ratings', df=df_gs) #GreatSchools.org data
     return
 
-# Set force to True to trigger a hard refresh for all data_sources
-# refresh_all_data_in_rds(non_gs_force=False, time_series_force=False, gs_force=False)
 
-# print(get_rds_schema())
-# filename = 'processed/all_data_current_snapshot_v4.csv'
-# df = pd.read_csv(filename)
-# write_table('all_data_current_snapshot_v3',path=filename)
-
-# Create prelim time series dataset for testing/feedback
-# desired_metro_areas = [
-#     'Atlanta-Sandy Springs-Alpharetta, GA',
-#     'Baltimore-Columbia-Towson, MD',
-#     'New York-Newark-Jersey City, NY-NJ-PA',
-#     'Phoenix-Mesa-Chandler, AZ',
-#     'Provo-Orem, UT',
-#     'Salt Lake City, UT',
-#     'San Francisco-Oakland-Berkeley, CA',
-#     'San Jose-Sunnyvale-Santa Clara, CA',
-#     'Spokane-Spokane Valley, WA'
-# ]
-# zillow = get_all_zillow_data(False, False)
-# zillow_subset = zillow.loc[zillow.metro.isin(desired_metro_areas)]
-# write_table('prelim_zillow_time_series',df=zillow_subset)
+if __name__ == "__main__":
+    # Set force to True to trigger a hard refresh for all data_sources
+    refresh_all_data_in_rds(non_gs_force=False, time_series_force=False, gs_force=False)
