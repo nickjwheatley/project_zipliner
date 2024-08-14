@@ -1,14 +1,31 @@
 """
+Population Data Processing Script
+
 This script processes population data from the American Community Survey (ACS) for years 2018-2022.
 It calculates the working age population for each ZIP code, maps ZIP codes to counties and regions,
 and produces a final dataset with population statistics.
 
+The script handles the 2022 data separately from the 2018-2021 data.
+
+Requirements:
+- pandas
+- numpy
+- json
+
+Input files required:
+- ACSDP5Y{year}.DP05-Data.csv files for years 2018-2022
+- ACSDP5Y2022.DP05-Column-Metadata.csv
+- uszips.xlsx - Sheet1.csv
+- regions_list.txt
+
+Output:
+- overall_population_per_county.parquet
 """
 
 import pandas as pd
-import csv
 import numpy as np
 import json
+import csv
 
 def process_metadata(file_path):
     """
@@ -141,54 +158,53 @@ def map_zips_to_regions(df, zip_to_region):
     df['Region'] = df['Region'].fillna('Other')
     return df
 
-def process_overall_population_data():
+def process_population_data():
     """
-    Process overall population data for years 2018 to 2022, including working age population calculations,
+    Process population data for years 2018 to 2022, including working age population calculations,
     ZIP code standardization, county and region mapping, and data cleaning.
 
     Returns:
     pandas.DataFrame: Final processed dataframe with population statistics by ZIP code, county, and region.
     """
-    # Process data for years 2018 to 2022
-    years = range(2018, 2023)
+    # Process data for years 2018 to 2021
+    years = range(2018, 2022)
     dfs = [process_year_data(year) for year in years]
-
-    # Combine all dataframes
     combined_df = pd.concat(dfs, ignore_index=True)
-
-    # Calculate working age population
     combined_df = calculate_working_age_population(combined_df)
 
-    # Rename columns
-    combined_df = combined_df.rename(columns={'Geographic Area Name': 'zip'})
+    # Process 2022 data separately
+    df_2022 = process_year_data(2022)
+    df_2022 = calculate_working_age_population(df_2022)
+
+    # Combine all data
+    final_combined_df = pd.concat([combined_df, df_2022], ignore_index=True)
+    final_combined_df = final_combined_df.rename(columns={'Geographic Area Name': 'zip'})
 
     # Remove Puerto Rico zip codes
     puerto_rico_zip_codes = ['00601', '00602', '00603', '00606', '00610', '00611', '00612', '00616', '00617', '00622', '00623', '00624', '00627', '00631', '00636', '00637', '00638', '00641', '00646', '00647', '00650', '00652', '00653', '00656', '00659', '00660', '00662', '00664', '00667', '00669', '00670', '00674', '00676', '00677', '00678', '00680', '00682', '00683', '00685', '00687', '00688', '00690', '00692', '00693', '00694', '00698', '00703', '00704', '00705', '00707', '00714', '00715', '00716', '00717', '00718', '00719', '00720', '00723', '00725', '00727', '00728', '00729', '00730', '00731', '00735', '00736', '00738', '00739', '00740', '00741', '00745', '00751', '00754', '00757', '00765', '00766', '00767', '00769', '00771', '00772', '00773', '00775', '00777', '00778', '00780', '00782', '00783', '00784', '00786', '00791', '00794', '00795', '00901', '00906', '00907', '00909', '00911', '00912', '00913', '00915', '00917', '00918', '00920', '00921', '00923', '00924', '00925', '00926', '00927', '00934', '00936', '00949', '00950', '00951', '00952', '00953', '00956', '00957', '00959', '00960', '00961', '00962', '00965', '00966', '00968', '00969', '00971', '00976', '00979', '00982', '00983', '00985', '00987']
-    combined_df = combined_df[~combined_df['zip'].isin(puerto_rico_zip_codes)]
+    final_combined_df = final_combined_df[~final_combined_df['zip'].isin(puerto_rico_zip_codes)]
 
-    # Standardize zip codes
-    combined_df = standardize_zip_codes(combined_df)
+    # Standardize ZIP codes
+    final_combined_df = standardize_zip_codes(final_combined_df)
 
     # Add county information
     zips_to_counties = pd.read_csv('uszips.xlsx - Sheet1.csv')
     zips_to_counties['zip'] = zips_to_counties['zip'].astype(str).str.zfill(5)
     zip_to_county = {row['zip']: get_majority_county(row['county_weights']) for _, row in zips_to_counties.iterrows()}
-    combined_df['county_fips'] = combined_df['zip'].map(zip_to_county)
+    final_combined_df['county_fips'] = final_combined_df['zip'].map(zip_to_county)
 
     # Add region information
     with open('regions_list.txt', 'r') as f:
         regions_list = f.read().splitlines()
     zip_to_region = create_region_mapping(zips_to_counties, regions_list)
-    final_df = map_zips_to_regions(combined_df, zip_to_region)
+    final_df = map_zips_to_regions(final_combined_df, zip_to_region)
 
-    # Remove rows with NaN values
+    # Clean up the data
     final_df = final_df.dropna()
-
-    # Ensure Total Working Age Population is numeric
     final_df['Total Working Age Population'] = pd.to_numeric(final_df['Total Working Age Population'], errors='coerce')
 
     return final_df
 
 if __name__ == "__main__":
-    final_df = process_overall_population_data()
+    final_df = process_population_data()
     final_df.to_parquet('overall_population_per_county.parquet')
