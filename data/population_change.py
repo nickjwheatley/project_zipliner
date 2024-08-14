@@ -1,9 +1,25 @@
+"""
+This script processes population change data from the American Community Survey (ACS) for the years 2018-2022.
+It focuses on migration patterns, educational attainment, and age demographics across different geographic areas.
+The script reads CSV files, processes the data, and outputs a final dataset in Parquet format.
+
+"""
+
 import pandas as pd
 import numpy as np
 import csv
 import json
 
 def process_metadata(file_path):
+    """
+    Reads a CSV file containing column metadata and returns a dictionary mapping column names to their descriptions.
+
+    Args:
+    file_path (str): Path to the metadata CSV file.
+
+    Returns:
+    dict: A dictionary with column names as keys and their descriptions as values.
+    """
     metadata_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -14,6 +30,15 @@ def process_metadata(file_path):
     return metadata_dict
 
 def process_year_data(year):
+    """
+    Processes ACS data for a specific year, renaming columns and filtering relevant information.
+
+    Args:
+    year (int): The year of the ACS data to process.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing processed data for the specified year.
+    """
     file_path = f'ACSST5Y{year}.S0701-Data.csv'
     meta_data_file_path = 'ACSST5Y2018.S0701-Column-Metadata.csv'
 
@@ -34,6 +59,15 @@ def process_year_data(year):
     return df
 
 def clean_numeric(x):
+    """
+    Cleans and formats numeric strings, removing commas and handling ranges.
+
+    Args:
+    x: The input value to clean.
+
+    Returns:
+    str: A cleaned string containing only digits and decimal points.
+    """
     if isinstance(x, str):
         x = x.replace(',', '')
         if '-' in x:
@@ -42,9 +76,28 @@ def clean_numeric(x):
     return x
 
 def safe_divide(a, b):
+    """
+    Performs division while handling division by zero.
+
+    Args:
+    a (numpy.array): Numerator array.
+    b (numpy.array): Denominator array.
+
+    Returns:
+    numpy.array: Result of a/b, with NaN where b is zero.
+    """
     return np.where(b != 0, a / b, np.nan)
 
 def process_population_data(df):
+    """
+    Processes population data, calculating various demographic percentages and totals.
+
+    Args:
+    df (pandas.DataFrame): Input DataFrame containing population data.
+
+    Returns:
+    pandas.DataFrame: Processed DataFrame with additional calculated columns.
+    """
     columns_to_keep = {
         'Geographic Area Name': 'Area',
         'Year': 'Year',
@@ -119,10 +172,29 @@ def process_population_data(df):
     return df_selected
 
 def standardize_zip_codes(df, zip_column='zip'):
+    """
+    Standardizes ZIP codes to ensure they are 5 digits long.
+
+    Args:
+    df (pandas.DataFrame): Input DataFrame.
+    zip_column (str): Name of the column containing ZIP codes.
+
+    Returns:
+    pandas.DataFrame: DataFrame with standardized ZIP codes.
+    """
     df[zip_column] = df[zip_column].astype(str).apply(lambda x: x.zfill(5))
     return df
 
 def get_majority_county(county_weights):
+    """
+    Determines the majority county from a JSON string of county weights.
+
+    Args:
+    county_weights (str): JSON string containing county weights.
+
+    Returns:
+    str: Name of the majority county, or None if parsing fails.
+    """
     try:
         weights = json.loads(county_weights.replace("'", '"'))
         return max(weights, key=weights.get)
@@ -130,6 +202,16 @@ def get_majority_county(county_weights):
         return None
 
 def create_region_mapping(zip_county_df, regions_list):
+    """
+    Creates a mapping of ZIP codes to regions based on city and state information.
+
+    Args:
+    zip_county_df (pandas.DataFrame): DataFrame containing ZIP code, city, and state information.
+    regions_list (list): List of region names.
+
+    Returns:
+    dict: A dictionary mapping ZIP codes to regions.
+    """
     regions_dict = {region.lower(): region for region in regions_list[1:]}
     zip_to_region = {}
     for _, row in zip_county_df.iterrows():
@@ -139,11 +221,35 @@ def create_region_mapping(zip_county_df, regions_list):
     return zip_to_region
 
 def map_zips_to_regions(df, zip_to_region):
+    """
+    Maps ZIP codes in a DataFrame to their corresponding regions.
+
+    Args:
+    df (pandas.DataFrame): Input DataFrame containing ZIP codes.
+    zip_to_region (dict): Dictionary mapping ZIP codes to regions.
+
+    Returns:
+    pandas.DataFrame: DataFrame with an additional 'Region' column.
+    """
     df['Region'] = df['zip'].map(zip_to_region)
     df['Region'] = df['Region'].fillna('Other')
     return df
 
 def process_population_change_data():
+    """
+    Main function to process population change data across multiple years.
+
+    This function coordinates the entire data processing pipeline, including:
+    - Processing data for each year from 2018 to 2022
+    - Combining data from all years
+    - Processing population data
+    - Removing Puerto Rico ZIP codes
+    - Adding county and region information
+    - Cleaning and finalizing the dataset
+
+    Returns:
+    pandas.DataFrame: Final processed DataFrame containing population change data.
+    """
     # Process data for years 2018 to 2022
     years = range(2018, 2023)
     dfs = [process_year_data(year) for year in years]
