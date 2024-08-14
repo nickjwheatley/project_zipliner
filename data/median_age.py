@@ -1,9 +1,29 @@
+"""
+Median Age Data Processing Script
+
+This script processes median age data from the American Community Survey (ACS) for multiple years,
+combines it with geographical information, and outputs a consolidated dataset.
+
+Functions in this script handle various data processing tasks such as reading CSV files,
+mapping ZIP codes to counties and regions, and standardizing data formats.
+"""
+
+
 import pandas as pd
 import csv
 import numpy as np
 import json
 
 def process_metadata(file_path):
+    """
+    Process the metadata CSV file and create a dictionary of column names.
+
+    Args:
+    file_path (str): Path to the metadata CSV file.
+
+    Returns:
+    dict: A dictionary mapping column IDs to their descriptive names.
+    """
     metadata_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -14,6 +34,15 @@ def process_metadata(file_path):
     return metadata_dict
 
 def process_year_data(year):
+    """
+    Process ACS data for a specific year.
+
+    Args:
+    year (int): The year of the ACS data to process.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing processed data for the specified year.
+    """
     file_path = f'ACSDT5Y{year}.B01002-Data.csv'
     meta_data_file_path = 'ACSDT5Y2018.B01002-Column-Metadata.csv'
 
@@ -28,10 +57,29 @@ def process_year_data(year):
     return df[['Geographic Area Name', 'Estimate!!Median age --!!Total', 'Year']]
 
 def standardize_zip_codes(df, zip_column='zip'):
+    """
+    Standardize ZIP codes by ensuring they are 5 digits long, zero-padded if necessary.
+
+    Args:
+    df (pandas.DataFrame): The DataFrame containing ZIP codes.
+    zip_column (str): The name of the column containing ZIP codes.
+
+    Returns:
+    pandas.DataFrame: The DataFrame with standardized ZIP codes.
+    """
     df[zip_column] = df[zip_column].astype(str).apply(lambda x: x.zfill(5))
     return df
 
 def get_majority_county(county_weights):
+    """
+    Determine the majority county from a JSON string of county weights.
+
+    Args:
+    county_weights (str): A JSON string representing county weights.
+
+    Returns:
+    str: The name of the majority county, or None if parsing fails.
+    """
     try:
         weights = json.loads(county_weights.replace("'", '"'))
         return max(weights, key=weights.get)
@@ -39,6 +87,16 @@ def get_majority_county(county_weights):
         return None
 
 def create_region_mapping(zip_county_df, regions_list):
+    """
+    Create a mapping of ZIP codes to regions based on city and state information.
+
+    Args:
+    zip_county_df (pandas.DataFrame): DataFrame containing ZIP code, city, and state information.
+    regions_list (list): List of regions, with the first element being a header.
+
+    Returns:
+    dict: A dictionary mapping ZIP codes to regions.
+    """
     regions_dict = {region.lower(): region for region in regions_list[1:]}
     zip_to_region = {}
     for _, row in zip_county_df.iterrows():
@@ -48,11 +106,29 @@ def create_region_mapping(zip_county_df, regions_list):
     return zip_to_region
 
 def map_zips_to_regions(df, zip_to_region):
+    """
+    Map ZIP codes in a DataFrame to their corresponding regions.
+
+    Args:
+    df (pandas.DataFrame): DataFrame containing ZIP codes.
+    zip_to_region (dict): Dictionary mapping ZIP codes to regions.
+
+    Returns:
+    pandas.DataFrame: The input DataFrame with an additional 'Region' column.
+    """
     df['Region'] = df['zip'].map(zip_to_region)
     df['Region'] = df['Region'].fillna('Other')
     return df
 
 def process_median_age_data():
+    """
+    Process median age data from multiple years, combine with geographical information,
+    and create a final dataset.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing processed median age data with additional
+                      geographical information.
+    """
     # Process data for years 2018 to 2022
     years = range(2018, 2023)
     dfs = [process_year_data(year) for year in years]
