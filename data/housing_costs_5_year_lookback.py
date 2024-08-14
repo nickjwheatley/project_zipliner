@@ -1,3 +1,14 @@
+"""
+This script processes housing costs data from the American Community Survey.
+It cleans the data, calculates various housing cost metrics, and aggregates
+the data by zip code, county, and region. The script handles data for multiple
+years, combines them, and produces a final cleaned dataset saved as a parquet file.
+
+The processed data includes information on median monthly housing costs,
+real estate taxes, and derived metrics such as the number of housing units within certain price ranges and
+affordability measures.
+"""
+
 import requests
 import pandas as pd
 import numpy as np
@@ -5,6 +16,15 @@ import csv
 import json
 
 def process_census_data(file_path):
+    """
+    Process the census metadata file to create a dictionary for column renaming.
+
+    Args:
+    file_path (str): Path to the census metadata CSV file.
+
+    Returns:
+    dict: A dictionary mapping original column names to descriptive names.
+    """
     census_data_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -15,6 +35,15 @@ def process_census_data(file_path):
     return census_data_dict
 
 def process_year_data(year):
+    """
+    Process housing costs data for a specific year.
+
+    Args:
+    year (int): The year of data to process.
+
+    Returns:
+    pandas.DataFrame: Processed data for the specified year.
+    """
     file_path = f'ACSST5Y{year}.S2506-Data.csv'
     meta_data_file_path = 'ACSST5Y2022.S2506-Column-Metadata.csv'
 
@@ -36,6 +65,15 @@ def process_year_data(year):
     return df
 
 def process_housing_costs(df):
+    """
+    Process the housing costs data, calculating various metrics and ratios.
+
+    Args:
+    df (pandas.DataFrame): Input dataframe with raw housing costs data.
+
+    Returns:
+    pandas.DataFrame: Processed dataframe with calculated housing cost metrics.
+    """
     columns_to_keep = [
         'Geographic Area Name',
         'Estimate!!Owner-occupied housing units with a mortgage!!Owner-occupied housing units with a mortgage!!HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2022 INFLATION-ADJUSTED DOLLARS)!!Median household income (dollars)',
@@ -82,6 +120,15 @@ def process_housing_costs(df):
     return df_selected[final_columns]
 
 def get_majority_county(county_weights):
+    """
+    Determine the majority county from a JSON string of county weights.
+
+    Args:
+    county_weights (str): JSON string of county weights.
+
+    Returns:
+    str: The FIPS code of the majority county.
+    """
     try:
         weights = json.loads(county_weights.replace("'", '"'))
         return max(weights, key=weights.get)
@@ -89,6 +136,16 @@ def get_majority_county(county_weights):
         return None
 
 def create_region_mapping(zip_county_df, regions_list):
+    """
+    Create a mapping of zip codes to regions.
+
+    Args:
+    zip_county_df (pandas.DataFrame): Dataframe with zip code and county information.
+    regions_list (list): List of region names.
+
+    Returns:
+    dict: A dictionary mapping zip codes to regions.
+    """
     regions_dict = {region.lower(): region for region in regions_list[1:]}
     zip_to_region = {}
     for _, row in zip_county_df.iterrows():
@@ -98,16 +155,45 @@ def create_region_mapping(zip_county_df, regions_list):
     return zip_to_region
 
 def map_zips_to_regions(df, zip_to_region):
+    """
+    Map zip codes in the dataframe to their corresponding regions.
+
+    Args:
+    df (pandas.DataFrame): Input dataframe.
+    zip_to_region (dict): Dictionary mapping zip codes to regions.
+
+    Returns:
+    pandas.DataFrame: Dataframe with added 'Region' column.
+    """
     df['Region'] = df['zip'].map(zip_to_region)
     df['Region'] = df['Region'].fillna('Other')
     return df
 
 def standardize_zip_codes(df, zip_column='zip'):
-    df[zip_column] = df[zip_column].astype(str)
-    df[zip_column] = df[zip_column].apply(lambda x: x.zfill(5))
+    """
+    Standardize zip codes to ensure they are 5 digits long.
+
+    Args:
+    df (pandas.DataFrame): Input dataframe.
+    zip_column (str): Name of the column containing zip codes.
+
+    Returns:
+    pandas.DataFrame: Dataframe with standardized zip codes.
+    """
+    df[zip_column] = df[zip_column].astype(str).apply(lambda x: x.zfill(5))
     return df
 
 def process_housing_data():
+    """
+    Main function to process housing costs data.
+
+    This function orchestrates the entire data processing pipeline, including
+    reading data for multiple years, combining them, calculating statistics,
+    and adding geographic information.
+
+    Returns:
+    pandas.DataFrame: The final processed dataframe.
+    """
     # Process data for years 2018 to 2022
     years = range(2018, 2023)
     dfs = [process_year_data(year) for year in years]
