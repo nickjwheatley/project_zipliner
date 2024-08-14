@@ -271,9 +271,10 @@ def process_operating_businesses_data():
 
     # Remove rows with NaN values
     final_df_engineered = final_df_engineered.dropna()
-
+    final_df_engineered = final_df_engineered.loc[:,~final_df_engineered.columns.duplicated()]
     return final_df_engineered
 
 if __name__ == "__main__":
     final_df = process_operating_businesses_data()
+    print(final_df.columns)
     final_df.to_parquet('operating_businesses.parquet')
