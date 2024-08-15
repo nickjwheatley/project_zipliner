@@ -1,25 +1,8 @@
 """
-Population Data Processing Script
-
-This script processes population data from the American Community Survey (ACS) for years 2018-2022.
-It calculates the working age population for each ZIP code, maps ZIP codes to counties and regions,
-and produces a final dataset with population statistics.
-
-The script handles the 2022 data separately from the 2018-2021 data.
-
-Requirements:
-- pandas
-- numpy
-- json
-
-Input files required:
-- ACSDP5Y{year}.DP05-Data.csv files for years 2018-2022
-- ACSDP5Y2022.DP05-Column-Metadata.csv
-- uszips.xlsx - Sheet1.csv
-- regions_list.txt
-
-Output:
-- overall_population_per_county.parquet
+This script processes overall population data from the American Community Survey.
+It cleans the data, calculates the working age population, and aggregates
+the data by zip code, county, and region. The script handles data for multiple
+years, combines them, and produces a final cleaned dataset saved as a parquet file.
 """
 
 import pandas as pd
@@ -29,14 +12,15 @@ import csv
 
 def process_metadata(file_path):
     """
-    Process the metadata CSV file and return a dictionary mapping column names to their descriptions.
+    Process the overall population metadata file to create a dictionary for column renaming.
 
     Args:
-    file_path (str): Path to the metadata CSV file.
+    file_path (str): Path to the overall population metadata CSV file.
 
     Returns:
-    dict: A dictionary with column names as keys and their descriptions as values.
+    dict: A dictionary mapping original column names to descriptive names.
     """
+    
     metadata_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
