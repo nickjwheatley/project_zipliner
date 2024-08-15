@@ -1,6 +1,7 @@
 import configparser
 
 def config(filename='SECRETS.ini', section='postgresql'):
+    """Function that returns all parameters of a config file section as a dictionary"""
     parser = configparser.ConfigParser()
     parser.read(filename)
 

@@ -1,4 +1,5 @@
 def get_metric_labels():
+    """Function creates aliases for each metric used in the web app metric dropdown"""
     return {
         'affordability_ratio':'Affordability Ratio',
         'appeal_index':'Appeal Index',
