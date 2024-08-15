@@ -90,7 +90,7 @@ def safe_divide(a, b):
 
 def process_population_data(df):
     """
-    Processes population data, calculating various demographic percentages and totals.
+    Processes population movement data, calculating various demographic percentages such as percentage of higher education individuals who have moved to a certain jurisdiction, and totals.
 
     Args:
     df (pandas.DataFrame): Input DataFrame containing population data.
@@ -239,7 +239,7 @@ def process_population_change_data():
     """
     Main function to process population change data across multiple years.
 
-    This function coordinates the entire data processing pipeline, including:
+    This function runs the entire data processing pipeline, including:
     - Processing data for each year from 2018 to 2022
     - Combining data from all years
     - Processing population data
