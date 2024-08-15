@@ -1,28 +1,11 @@
 """
-Median Income Data Processing Script
+This script processes median income data from the American Community Survey.
+It cleans the data, calculates various income metrics, and aggregates
+the data by zip code, county, and region. The script handles data for multiple
+years, combines them, and produces a final cleaned dataset saved as a parquet file.
 
-This script processes median income data from various CSV files, cleans and combines the data,
-and produces a final dataset with income statistics by zip code and region.
-
-The script performs the following main steps:
-1. Loads and processes median income data from multiple years
-2. Cleans and standardizes the data
-3. Calculates income growth rates
-4. Maps zip codes to counties and regions
-5. Saves the final processed dataset as a Parquet file
-
-Requirements:
-- pandas
-- numpy
-
-Input files required:
-- ACSST5Y{year}.S1903-Data.csv files for years 2018-2022
-- ACSST5Y2022.S1903-Column-Metadata.csv
-- uszips.xlsx - Sheet1.csv
-- regions_list.txt
-
-Output:
-- median_income.parquet
+The processed data includes information on median income between young and old,
+families and non-families, and derived metrics such as the income growth rate in a region.
 
 """
 
@@ -33,14 +16,15 @@ import json
 
 def process_median_income_data(file_path):
     """
-    Process median income data from a CSV file.
+    Process the median income metadata file to create a dictionary for column renaming.
 
     Args:
-    file_path (str): Path to the CSV file containing median income data.
+    file_path (str): Path to the census metadata CSV file.
 
     Returns:
-    dict: A dictionary mapping column names to their corresponding values.
+    dict: A dictionary mapping original column names to descriptive names.
     """
+    
     median_income_data_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -81,7 +65,7 @@ def process_year_data(year):
 
 def process_median_income(df):
     """
-    Process and clean median income data.
+    Process and clean median income data as well as create derived metrics such as `Median_Income_Family_Nonfamily_Ratio` (ratio of median income between families and non-families).
 
     Args:
     df (pandas.DataFrame): Input DataFrame containing median income data.
