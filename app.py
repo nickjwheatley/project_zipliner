@@ -44,7 +44,7 @@ app.title = 'Zipliner'
 app.layout = html.Div([
         html.P(
             ["Welcome to Zipliner! This application is designed to help prospective home buyers learn which regions to target for their future home. ",
-            html.A('See site documentation.',href='https://github.com/nickjwheatley/project_zipliner/tree/main')
+            html.A('See site documentation.',href='https://docs.google.com/document/d/1oth3DYw5czuwAf4TaGTvuk_us27D_DZJaXGbELgZdOA/edit?usp=drive_link', target='_blank')
         ]),
         # Create Dropdowns
         html.Div([
@@ -196,7 +196,7 @@ def update_choropleth_graph(selected_metro_area, selected_num_bedrooms, selected
 def update_time_series_graph(clickData, bedrooms):
     # Display empty plot with guiding title if no choropleth region has been selected
     if clickData is None:
-        return px.line(title='Hover over map regions to see trended home values')
+        return px.line(title='Click a map regions to see trended home values')
 
     # Get selected zip_code
     zc = clickData['points'][0]['location']
