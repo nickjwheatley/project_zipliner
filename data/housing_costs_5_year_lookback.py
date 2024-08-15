@@ -21,7 +21,7 @@ def process_census_data(file_path):
     Process the census metadata file to create a dictionary for column renaming.
 
     Args:
-    file_path (str): Path to the census metadata CSV file.
+    file_path (str): Path to the metadata CSV file.
 
     Returns:
     dict: A dictionary mapping original column names to descriptive names.
