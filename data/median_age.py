@@ -1,8 +1,6 @@
 """
-Median Age Data Processing Script
-
 This script processes median age data from the American Community Survey (ACS) for multiple years,
-combines it with geographical information, and outputs a consolidated dataset.
+combines it with geographical information, and outputs a consolidated dataframe.
 
 Functions in this script handle various data processing tasks such as reading CSV files,
 mapping ZIP codes to counties and regions, and standardizing data formats.
@@ -17,7 +15,7 @@ import json
 
 def process_metadata(file_path):
     """
-    Process the metadata CSV file and create a dictionary of column names.
+    Process the median age metadata file and create a dictionary for column renaming.
 
     Args:
     file_path (str): Path to the metadata CSV file.
