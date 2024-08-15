@@ -1,6 +1,6 @@
 # MADS Capstone: Project Zipliner
 ## Overview
-[Project Zipliner](http://www.projectzipliner.com/) is a Dash web application designed to assist potential home buyers select which region to buy a home. The site provides information at the zip code level, including the following:
+[Project Zipliner](http://www.projectzipliner.com/) is a Dash web application designed to assist potential home buyers select which region to buy a home. See demo [here](https://drive.google.com/file/d/1nxY3DwOiDBDyLmr4usqD0bsLLpMbMOzw/view?usp=drive_link). The site provides information at the zip code level, including the following:
 
 - Zillow Home Value Index (Median home price)
 - Crime rates
