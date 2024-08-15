@@ -129,13 +129,10 @@ def write_table(table_name, include_index=False, df=None, path=None, chunk = Non
         print(f'LOADING IN {chunk} CHUNKS')
         num_rows = df.shape[0]
         df.iloc[:chunk].to_sql(table_name, con=conn, if_exists='replace', index=include_index)
-        # print(df.iloc[:chunk].index.max())
         for i in range(1,num_rows // chunk):
             print(f'{i} CHUNKS LOADED')
             df.iloc[(i)*chunk:(i+1)*chunk].to_sql(table_name, con=conn, if_exists='append', index=include_index)
-            # print(df.iloc[(i)*chunk:(i+1)*chunk].index.max())
         df.iloc[(i+1)*chunk:].to_sql(table_name, con=conn, if_exists='append', index=include_index)
-        # print(df.iloc[(i+1)*chunk:].index.max())
     return
 
 
@@ -216,6 +213,7 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
         if (df_merged4[col].dtypes not in ['O','string']) & (col not in ['zip_code', 'bedrooms', 'county_fips']):
             value_cols.append(col)
 
+    # Solve for remaining missing values by applying the county, state, or country averages
     df_county = df_merged4[['county_name', 'bedrooms'] + value_cols].groupby(['county_name', 'bedrooms']).mean().reset_index()
     df_county.columns = ['county_name', 'bedrooms'] + [col + '_county_mean' for col in df_county.columns if
                                                        col not in ['county_name', 'bedrooms']]
@@ -235,7 +233,6 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
     total_rows = df3.shape[0]
     for col in value_cols:
         # Only fill for NA in columns with missing data
-        pre_row_count = df3[col].count()
         if df3[col].count() == total_rows:
             continue
 
@@ -259,7 +256,6 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
     print('PREDICTING HOME VALUE')
 
     # Remove fields that cause overfitting
-    # regression_cols = list(set(value_cols) - set(['appeal_index','prop_tax_zhvi_ratio','median_real_estate_taxes', 'affordability_ratio']))
     regression_cols = [
         'zhvi', 'mean_travel_time_to_work', 'median_age', 'no_of_housing_units_that_cost_less_$1000',
         'no_of_housing_units_that_cost_$1000_to_$1999', 'no_of_housing_units_that_cost_$2000_to_$2999',
@@ -290,7 +286,6 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
     # predict home value at the county level
     df4['county_state'] = df4.apply(lambda x: f'{x.county_name}, {x.state}', axis=1)
     dfs = []
-    # for state in list(df4.state_name.unique()):
     for cs in sorted(df4.county_state.unique()):
         for br in sorted(df4.bedrooms.unique()):
             tmp_df = df4.loc[(df4.bedrooms == br) & (df4.county_state == cs)].copy()
@@ -313,7 +308,6 @@ def refresh_all_data_in_rds(non_gs_force=False, gs_force=False, time_series_forc
     df5.loc[df5.home_price_difference_perc > .05, 'home_valuation_status'] = 'Overvalued'
 
     # Add Appeal Index
-
     # cleaning and preparing the data for normalization
     df_clean = df5.copy()
     df_clean['mean_travel_time_to_work'] = pd.to_numeric(df_clean['mean_travel_time_to_work'], errors='coerce')

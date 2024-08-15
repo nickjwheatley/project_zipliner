@@ -1,7 +1,5 @@
-import dash
-from dash import html, dcc, callback, Output, Input, Dash, DiskcacheManager, CeleryManager, dash_table
-import pandas as pd
-from visualization import render_choropleth_map, make_progress_graph, render_time_series_plot, render_choropleth_mapbox
+from dash import html, dcc, callback, Output, Input, Dash, DiskcacheManager, CeleryManager
+from visualization import render_time_series_plot, render_choropleth_mapbox
 import dash_bootstrap_components as dbc
 import os
 import numpy as np
@@ -11,8 +9,6 @@ from data.data_extract import query_rds
 import json
 from dash_objects.cards import generate_populated_cards
 from dash_objects.chatgpt_object import get_chatgpt_response
-import gunicorn
-import sys
 
 ON_HEROKU = os.getenv('ON_HEROKU')
 if (ON_HEROKU == True) | (ON_HEROKU == 'TRUE'):
@@ -47,9 +43,9 @@ server = app.server
 app.title = 'Zipliner'
 app.layout = html.Div([
         html.P(
-            ["Welcome to Zipliner! This application is designed to help prospective home buyers learn which regions to target for their future home."
+            ["Welcome to Zipliner! This application is designed to help prospective home buyers learn which regions to target for their future home. ",
+            html.A('See site documentation.',href='https://github.com/nickjwheatley/project_zipliner/tree/main')
         ]),
-        # html.P(""),
         # Create Dropdowns
         html.Div([
             dbc.Row([

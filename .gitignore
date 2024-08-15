@@ -1,7 +1,8 @@
 # Exlcude venv
 *zipliner*
 data/processed*
-data/raw*
+*.parquet
+!data/raw/merged_dataset_before_zillow_V2.parquet
 *.ipynb_checkpoints*
 *.idea*
 *SECRETS.ini*
