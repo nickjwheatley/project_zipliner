@@ -18,7 +18,7 @@ import json
 
 def process_census_data(file_path):
     """
-    Process the census metadata file to create a dictionary for column renaming.
+    Process the housing costs metadata file to create a dictionary for column renaming.
 
     Args:
     file_path (str): Path to the metadata CSV file.
