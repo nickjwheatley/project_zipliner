@@ -64,13 +64,13 @@ def process_year_data(year):
 
 def calculate_commute_time_groups(df):
     """
-    Calculate commute time groups and percentages.
+    Calculate commute time groups. ACS commute time is provided as percentages.
 
     Args:
     df (pandas.DataFrame): Input dataframe with commute time data.
 
     Returns:
-    pandas.DataFrame: Dataframe with added commute time group percentages.
+    pandas.DataFrame: Dataframe with added commute time groups returned as percentages.
     """
     commute_columns = [
         'Estimate!!Total!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!Less than 10 minutes',
@@ -161,7 +161,7 @@ def process_commuter_data():
     """
     Main function to process commuter data.
 
-    This function orchestrates the entire data processing pipeline, including
+    This function runs the entire data processing pipeline, including
     reading data for multiple years, combining them, calculating commute range columns,
     and adding geographic information.
 
