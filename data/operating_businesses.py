@@ -16,7 +16,7 @@ def process_cbp_metadata(file_path):
     Process the CBP metadata file to create a dictionary for column renaming.
 
     Args:
-    file_path (str): Path to the census metadata CSV file.
+    file_path (str): Path to the metadata CSV file.
 
     Returns:
     dict: A dictionary mapping original column names to descriptive names.
