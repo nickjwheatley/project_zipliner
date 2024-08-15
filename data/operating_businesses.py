@@ -2,7 +2,7 @@
 This script processes and analyzes Census Bureau County Business Patterns (CBP) data for operating businesses
 in the United States from 2018 to 2022. It combines data from multiple years, standardizes geography,
 maps businesses to regions, calculates economic diversity indices, and engineers additional features.
-The final output is a parquet file containing processed and enriched data on large business establishments.
+The final output is a parquet file containing processed data on large business establishments.
 """
 
 import pandas as pd
@@ -11,15 +11,18 @@ import json
 import csv
 
 def process_cbp_metadata(file_path):
+
     """
-    Process the CBP metadata file and create a dictionary mapping column codes to descriptions.
+    Process the CBP metadata file to create a dictionary for column renaming.
 
     Args:
-        file_path (str): Path to the CBP metadata CSV file.
+    file_path (str): Path to the census metadata CSV file.
 
     Returns:
-        dict: A dictionary with column codes as keys and descriptions as values.
+    dict: A dictionary mapping original column names to descriptive names.
     """
+
+    
     cbp_dict = {}
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csv_reader = csv.reader(csvfile)
@@ -144,7 +147,7 @@ def calculate_economic_diversity_index(df):
 
 def engineer_features(df):
     """
-    Engineer additional features for the dataset.
+    Engineer additional features for the dataset such as YoY change in establishments.
 
     Args:
         df (pandas.DataFrame): The main dataframe.
@@ -185,16 +188,12 @@ def process_operating_businesses_data():
     """
     Main function to process operating businesses data.
 
-    This function orchestrates the entire data processing pipeline, including:
-    - Loading data for multiple years
-    - Standardizing geography
-    - Mapping regions
-    - Engineering features
-    - Filtering for large establishments
-    - Cleaning and standardizing the final dataset
+    This function runs the entire data processing pipeline, including
+    reading data for multiple years, combining them, calculating statistics/derived features,
+    and adding geographic information.
 
     Returns:
-        pandas.DataFrame: The final processed and cleaned dataframe.
+    pandas.DataFrame: The final processed dataframe.
     """
     # Process data for years 2018 to 2022
     years = range(2018, 2023)
