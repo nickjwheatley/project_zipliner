@@ -67,7 +67,7 @@ def process_year_data(year):
 
 def process_housing_costs(df):
     """
-    Process the housing costs data, calculating various metrics and ratios.
+    Process the housing costs data, calculating various metrics and ratios, e.g. the Affordability_Ratio, a ratio of monthly housing cost to median monthly income.
 
     Args:
     df (pandas.DataFrame): Input dataframe with raw housing costs data.
@@ -188,7 +188,7 @@ def process_housing_data():
     """
     Main function to process housing costs data.
 
-    This function orchestrates the entire data processing pipeline, including
+    This function runs the entire data processing pipeline, including
     reading data for multiple years, combining them, calculating statistics,
     and adding geographic information.
 
