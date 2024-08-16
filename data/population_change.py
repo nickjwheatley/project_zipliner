@@ -239,13 +239,9 @@ def process_population_change_data():
     """
     Main function to process population change data across multiple years.
 
-    This function runs the entire data processing pipeline, including:
-    - Processing data for each year from 2018 to 2022
-    - Combining data from all years
-    - Processing population data
-    - Removing Puerto Rico ZIP codes
-    - Adding county and region information
-    - Cleaning and finalizing the dataset
+    This function runs the entire data processing pipeline, including 
+    processing data for each year from 2018 to 2022, combining them, creating derived stats/metrics,
+    adding geographic information and finally returning a final parquet file as a result.
 
     Returns:
     pandas.DataFrame: Final processed DataFrame containing population change data.
